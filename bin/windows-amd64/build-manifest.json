@@ -1,0 +1,16 @@
+{
+  "target": "windows/amd64",
+  "cgo": true,
+  "go": "go version go1.22.2 linux/amd64",
+  "compiler": "x86_64-w64-mingw32-gcc-posix (GCC) 13-posix",
+  "artifacts": {
+    "eac3to.exe": {
+      "sha256": "3ab1793f15762204e86a2e10aeab141a8377d25a98d9e0957249e36dffab492a",
+      "size": 4087296
+    },
+    "pcmcompare.exe": {
+      "sha256": "e44ed937d59943b1f2c937131e8b5151a4781059e2c3c932cbeb899e962ba0e3",
+      "size": 2228736
+    }
+  }
+}

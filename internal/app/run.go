@@ -17,12 +17,12 @@ import (
 const help = `eac3to-go — native media demuxer and audio processor
 
 Usage:
-  eac3to INPUT                             List tracks
+  eac3to INPUT                             Select tracks in a terminal
   eac3to INPUT 2: audio.flac               Process a selected track
   eac3to INPUT 1: video.h264 2: audio.dts   Extract several tracks
   eac3to INPUT -demux -destpath=OUTPUT     Extract tracks and chapters
   eac3to INPUT output.*                    Extract tracks with a filename prefix
-  eac3to DISC                              List Blu-ray playlists
+  eac3to DISC                              Select playlist and tracks in a terminal
   eac3to DISC --main                       Inspect the recommended feature
   eac3to DISC -demux                       Select and extract the main feature
   eac3to DISC --playlist=00001 -demux       Extract a specific playlist
@@ -44,6 +44,7 @@ Disc:  --main, --playlist=NNNNN, --segments, --compare-playlists=ID,ID,
        -include_hidden, -minDuration=SECONDS, -collapse=N, -auditpl
 PGS:   -forced
 Other: -test, -check, --json, --dry-run, --force, --quiet,
+       --interactive, --non-interactive,
        --report=PATH (atomic output manifest with residual mux delays),
        --jobs=N, --threads=N, --ffmpeg=PATH, --ffprobe=PATH, --decoder=PATH, --version
        --allow-unverified (enable reference-comparison paths)
@@ -51,6 +52,11 @@ Other: -test, -check, --json, --dry-run, --force, --quiet,
 Track options follow their output filename. Options before the first output
 are defaults for every output. Quote title selectors and wildcard filenames
 so the shell passes them unchanged. Existing files require --force.
+
+With terminal input and diagnostics, no arguments or a source-only launch
+starts interactive selection. --non-interactive keeps source listing behavior;
+--interactive forces prompts with redirected input. Fully specified outputs,
+JSON, reports and inspection modes remain unattended.
 
 The version-1 extraction report links final output paths to source tracks.
 Its mux_delay_ms is the remaining whole-millisecond compressed-frame delay;
@@ -66,6 +72,9 @@ func Run(ctx context.Context, args []string, stdout, stderr io.Writer) error {
 	o, e := ParseOptions(args)
 	if e != nil {
 		return e
+	}
+	if o.Interactive {
+		return fmt.Errorf("--interactive needs input; use RunWithInput")
 	}
 	if o.Report != "" && (o.Help || o.Version || o.Test || o.Check || !o.Demux && len(o.Outputs) == 0) {
 		return fmt.Errorf("--report requires media extraction")

@@ -42,12 +42,22 @@ for name, record in inputs.items():
 build = root / "build" / ("decoder-profile1-" + uuid.uuid4().hex[:12])
 subprocess.run([sys.executable, str(package / "build.py"), str(build), str(archives)], check=True)
 subprocess.run([sys.executable, str(root / "scripts/check-decoder.py"), str(build / "eac3to-decoder")], check=True)
+manifest = json.loads((build / "build-manifest.json").read_text())
+manifest["reference_pcm_checked"] = True
+(build / "build-manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
 destination = root / "bin/libexec/eac3to-decoder"
 destination.parent.mkdir(parents=True, exist_ok=True)
 temporary = destination.with_name(destination.name + "." + uuid.uuid4().hex + ".tmp")
 try:
     shutil.copy2(build / "eac3to-decoder", temporary)
     os.replace(temporary, destination)
+finally:
+    temporary.unlink(missing_ok=True)
+record = destination.parent / "build-manifest.json"
+temporary = record.with_name(record.name + "." + uuid.uuid4().hex + ".tmp")
+try:
+    shutil.copy2(build / "build-manifest.json", temporary)
+    os.replace(temporary, record)
 finally:
     temporary.unlink(missing_ok=True)
 print("Created", destination)

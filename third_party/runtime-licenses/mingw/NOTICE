@@ -1,0 +1,7 @@
+The Windows Cgo executables and matched decoder use MinGW-w64 runtime
+support. COPYRIGHT is reproduced unchanged from mingw-w64-common
+11.0.1-3build1. The exact isolated toolchain inputs and checksums are
+recorded in scripts/windows-toolchain.json.
+
+The runtime source is not modified by this project.
+Upstream source: https://www.mingw-w64.org/

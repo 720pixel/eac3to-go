@@ -1,0 +1,8 @@
+The executables include the Go runtime and standard library.
+
+The tested compiler is Go 1.22.2 from the Ubuntu package
+golang-1.22-go 1.22.2-2ubuntu0.4. COPYRIGHT is reproduced unchanged
+from that package and includes the upstream Go license and attribution.
+The runtime source is not modified by this project.
+
+Upstream source: https://go.dev/dl/

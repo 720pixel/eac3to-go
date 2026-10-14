@@ -1,0 +1,16 @@
+The Cgo programs and matched decoder use GCC runtime support. The C++
+resampler also links the GCC C++ runtime. The runtime libraries covered
+by the GCC Runtime Library Exception retain that exception; its full
+text is included in the COPYRIGHT files. COPYING.GPLv3 supplies the
+referenced GNU General Public License.
+
+COPYRIGHT.linux is reproduced unchanged from gcc-13-base
+13.3.0-6ubuntu2~24.04.1. This also covers the matching static C++
+runtime supplied by libstdc++-13-dev.
+
+COPYRIGHT.windows is reproduced unchanged from the isolated
+gcc-mingw-w64-base 13.2.0-6ubuntu1+26.1 package. The exact Windows
+toolchain inputs and checksums are in scripts/windows-toolchain.json.
+
+The runtime sources are not modified by this project.
+Upstream source: https://gcc.gnu.org/releases.html

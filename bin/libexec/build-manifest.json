@@ -1,0 +1,50 @@
+{
+  "profile": "eac3to-decoder-profile1",
+  "binary_sha256": "1aa47bd6b6b3967192acb63df527adeffd1fde8cb9f4b52fc3948fe6ff772114",
+  "source_inputs": {
+    "ffmpeg-8.0.2.tar.xz": {
+      "url": "https://ffmpeg.org/releases/ffmpeg-8.0.2.tar.xz",
+      "sha256": "5d16962332603c427b3d0887fc12b9166d6ee2cb1108b1865dd2d5eb06a09505",
+      "bytes": 11397612
+    },
+    "nasm-2.16.03.tar.xz": {
+      "url": "https://www.nasm.us/pub/nasm/releasebuilds/2.16.03/nasm-2.16.03.tar.xz",
+      "sha256": "1412a1c760bbd05db026b6c0d1657affd6631cd0a63cddb6f73cc6d4aa616148",
+      "bytes": 1032388
+    },
+    "profile1.patch": {
+      "sha256": "a6fe16fbf0ef838d03f923421ad36be1e5497073d5f654a2698cf66c319934d3",
+      "bytes": 15221
+    }
+  },
+  "configure": [
+    "src/configure",
+    "--cc=gcc",
+    "--x86asmexe=../nasm-2.16.03/nasm",
+    "--disable-everything",
+    "--disable-autodetect",
+    "--disable-debug",
+    "--disable-doc",
+    "--disable-network",
+    "--disable-inline-asm",
+    "--disable-ffplay",
+    "--disable-ffprobe",
+    "--enable-encoder=pcm_f32le,pcm_f64le",
+    "--enable-filter=aresample,aformat",
+    "--enable-static",
+    "--disable-shared",
+    "--enable-decoder=ac3,eac3,dca",
+    "--extra-cflags=-mfpmath=387 -fexcess-precision=standard -ffile-prefix-map=src=ffmpeg-8.0.2",
+    "--enable-muxer=pcm_f32le,pcm_f64le,wav",
+    "--extra-version=eac3to-decoder-profile1",
+    "--enable-demuxer=ac3,eac3,dts,matroska,mpegts,mpegps,mov,wav,w64,concat",
+    "--enable-parser=ac3,dca,h264,hevc,mpegvideo,vc1",
+    "--enable-protocol=file,pipe,concat,concatf"
+  ],
+  "platform": "Linux-6.8.0-136-generic-x86_64-with-glibc2.39",
+  "compiler": "gcc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0\nCopyright (C) 2023 Free Software Foundation, Inc.\nThis is free software; see the source for copying conditions.  There is NO\nwarranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n\n",
+  "nasm": "NASM version 2.16.03 compiled on Oct 15 2026\n",
+  "version": "ffmpeg version 8.0.2-eac3to-decoder-profile1 Copyright (c) 2000-2025 the FFmpeg developers\nbuilt with gcc 13 (Ubuntu 13.3.0-6ubuntu2~24.04.1)\nconfiguration: --cc=gcc --x86asmexe=../nasm-2.16.03/nasm --disable-everything --disable-autodetect --disable-debug --disable-doc --disable-network --disable-inline-asm --disable-ffplay --disable-ffprobe --enable-encoder='pcm_f32le,pcm_f64le' --enable-filter='aresample,aformat' --enable-static --disable-shared --enable-decoder='ac3,eac3,dca' --extra-cflags='-mfpmath=387 -fexcess-precision=standard -ffile-prefix-map=src=ffmpeg-8.0.2' --enable-muxer='pcm_f32le,pcm_f64le,wav' --extra-version=eac3to-decoder-profile1 --enable-demuxer='ac3,eac3,dts,matroska,mpegts,mpegps,mov,wav,w64,concat' --enable-parser='ac3,dca,h264,hevc,mpegvideo,vc1' --enable-protocol='file,pipe,concat,concatf'\nlibavutil      60.  8.102 / 60.  8.102\nlibavcodec     62. 11.102 / 62. 11.102\nlibavformat    62.  3.102 / 62.  3.102\nlibavdevice    62.  1.102 / 62.  1.102\nlibavfilter    11.  4.102 / 11.  4.102\nlibswscale      9.  1.102 /  9.  1.102\nlibswresample   6.  1.102 /  6.  1.102\n\nExiting with exit code 0\n",
+  "dynamic_dependencies": "\tlinux-vdso.so.1 (0x00007ffdbe736000)\n\tlibm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x00007c0db4517000)\n\tlibc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007c0db4200000)\n\t/lib64/ld-linux-x86-64.so.2 (0x00007c0db5a62000)\n",
+  "reference_pcm_checked": true
+}

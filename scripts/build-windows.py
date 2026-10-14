@@ -85,7 +85,7 @@ def main():
     # Go package directories and are not all covered by Go's build cache.
     for name in ("eac3to", "pcmcompare"):
         target = output / (name + ".exe")
-        subprocess.run(["go", "build", "-a", "-trimpath", "-ldflags=" + flags,
+        subprocess.run(["go", "build", "-a", "-trimpath", "-buildvcs=false", "-ldflags=" + flags,
                         "-o", str(target), "./cmd/" + name], cwd=ROOT, env=env, check=True)
         manifest["artifacts"][target.name] = {"sha256": digest(target), "size": target.stat().st_size}
         print("Created", target, flush=True)

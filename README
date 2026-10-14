@@ -5,6 +5,15 @@ Native media demuxing and audio processing in Go, with eac3to 4.00 behavior
 as the compatibility reference. The project is under development. It is not
 yet a complete replacement for every Windows eac3to operation.
 
+Linux and Windows amd64 builds are checked in under bin/:
+
+  bin/eac3to
+  bin/windows-amd64/eac3to.exe
+
+Keep the matching libexec directory beside each executable for audio
+conversions that use the decoder helper. Packages, checksums and matching
+decoder source are available at https://github.com/720pixel/eac3to-go/releases.
+
   make build
   make decoder
   make windows
@@ -28,6 +37,21 @@ pair together; explicit --ffmpeg and --ffprobe paths take priority.
 Quote paths containing spaces and title selectors such as '1)' when using a
 shell. Existing outputs require --force. Unsupported operations fail explicitly.
 --allow-unverified enables comparison paths; it does not establish parity.
+
+Interactive terminals open a wizard when launched without a source or with
+only a source. It lists playlists with their recommendation evidence, accepts
+track numbers or ranges, and asks for an output format and destination for
+each selected track. Review the concrete extraction/conversion plan before
+entering yes to start. q, EOF or no cancels before processing starts.
+
+  eac3to
+  eac3to /disc/BDMV
+  eac3to /disc/BDMV --non-interactive
+
+--non-interactive keeps source-only commands in listing mode for scripts.
+Existing commands with explicit outputs or -demux remain unattended.
+--interactive requests a review even for a fully specified output command.
+JSON, report and dry-run operations do not start an automatic wizard.
 
 --report=/path/to/extraction.json writes a successful extraction manifest with
 the final output paths and residual mux delays. It is intended for muxers that

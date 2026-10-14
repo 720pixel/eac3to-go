@@ -1,0 +1,54 @@
+{
+  "target": "windows/amd64",
+  "profile": "eac3to-decoder-profile1",
+  "sha256": "4f8ca7eb57e3631bab755d42b2a91a93d405c3deafd6e54823925ed68b7a7185",
+  "source_inputs": {
+    "ffmpeg-8.0.2.tar.xz": {
+      "url": "https://ffmpeg.org/releases/ffmpeg-8.0.2.tar.xz",
+      "sha256": "5d16962332603c427b3d0887fc12b9166d6ee2cb1108b1865dd2d5eb06a09505",
+      "bytes": 11397612
+    },
+    "nasm-2.16.03.tar.xz": {
+      "url": "https://www.nasm.us/pub/nasm/releasebuilds/2.16.03/nasm-2.16.03.tar.xz",
+      "sha256": "1412a1c760bbd05db026b6c0d1657affd6631cd0a63cddb6f73cc6d4aa616148",
+      "bytes": 1032388
+    },
+    "profile1.patch": {
+      "sha256": "a6fe16fbf0ef838d03f923421ad36be1e5497073d5f654a2698cf66c319934d3",
+      "bytes": 15221
+    }
+  },
+  "reference_pcm_checked": true,
+  "configure": [
+    "--disable-everything",
+    "--disable-autodetect",
+    "--disable-debug",
+    "--disable-doc",
+    "--disable-network",
+    "--disable-inline-asm",
+    "--disable-ffplay",
+    "--disable-ffprobe",
+    "--enable-encoder=pcm_f32le,pcm_f64le",
+    "--enable-filter=aresample,aformat",
+    "--enable-static",
+    "--disable-shared",
+    "--enable-decoder=ac3,eac3,dca",
+    "--extra-cflags=-mfpmath=387 -fexcess-precision=standard -ffile-prefix-map=src=ffmpeg-8.0.2",
+    "--enable-muxer=pcm_f32le,pcm_f64le,wav",
+    "--extra-version=eac3to-decoder-profile1",
+    "--enable-demuxer=ac3,eac3,dts,matroska,mpegts,mpegps,mov,wav,w64,concat",
+    "--enable-parser=ac3,dca,h264,hevc,mpegvideo,vc1",
+    "--enable-protocol=file,pipe,concat,concatf",
+    "--target-os=mingw32",
+    "--arch=x86_64",
+    "--enable-cross-compile",
+    "--cc=../../reference-tools/mingw/root/usr/bin/x86_64-w64-mingw32-gcc-posix",
+    "--ld=../../reference-tools/mingw/root/usr/bin/x86_64-w64-mingw32-gcc-posix",
+    "--extra-ldflags=-static",
+    "--x86asmexe=../nasm-2.16.03/nasm",
+    "--ar=../../reference-tools/mingw/root/usr/bin/x86_64-w64-mingw32-ar",
+    "--ranlib=../../reference-tools/mingw/root/usr/bin/x86_64-w64-mingw32-ranlib",
+    "--nm=../../reference-tools/mingw/root/usr/bin/x86_64-w64-mingw32-nm",
+    "--strip=../../reference-tools/mingw/root/usr/bin/x86_64-w64-mingw32-strip"
+  ]
+}

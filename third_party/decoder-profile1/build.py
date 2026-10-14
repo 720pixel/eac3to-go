@@ -55,8 +55,13 @@ run([str(NASM/'configure'),'--prefix='+str(OUT/'unused-prefix')],NASM,OUT/'nasm-
 run(['make','-j8','nasm'],NASM,OUT/'nasm-build.log')
 BUILD = OUT/'build'
 BUILD.mkdir()
+# FFmpeg recognizes src/configure and keeps source filenames relative. This
+# also keeps assert diagnostics and the recorded configure string portable.
+(BUILD/'src').symlink_to('../ffmpeg-8.0.2',target_is_directory=True)
 options = json.loads((HERE/'configure-options.json').read_text())
-command = [str(SOURCE/'configure'),'--cc=gcc','--x86asmexe='+str(NASM/'nasm'),*options]
+options = [option+' -ffile-prefix-map=src=ffmpeg-8.0.2'
+           if option.startswith('--extra-cflags=') else option for option in options]
+command = ['src/configure','--cc=gcc','--x86asmexe=../nasm-2.16.03/nasm',*options]
 run(command,BUILD,OUT/'configure.log')
 run(['make','-j8','ffmpeg'],BUILD,OUT/'build.log')
 binary = OUT/'eac3to-decoder'

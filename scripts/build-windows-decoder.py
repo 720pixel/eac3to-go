@@ -72,16 +72,22 @@ def main():
     run(["make", "-j8", "nasm"], nasm, "nasm-build.log")
     build = out / "build"
     build.mkdir()
+    # FFmpeg's src/configure convention avoids absolute source filenames in
+    # diagnostics without changing the decoder or compiler arithmetic flags.
+    (build / "src").symlink_to("../ffmpeg-8.0.2", target_is_directory=True)
     options = json.loads((package / "configure-options.json").read_text())
+    options = [option + " -ffile-prefix-map=src=ffmpeg-8.0.2"
+               if option.startswith("--extra-cflags=") else option for option in options]
+    relative_cc = os.path.relpath(cc, build)
     options += ["--target-os=mingw32", "--arch=x86_64", "--enable-cross-compile",
-                "--cc=" + cc, "--ld=" + cc, "--extra-ldflags=-static",
-                "--x86asmexe=" + str(nasm / "nasm")]
+                "--cc=" + relative_cc, "--ld=" + relative_cc, "--extra-ldflags=-static",
+                "--x86asmexe=../nasm-2.16.03/nasm"]
     for tool in ("ar", "ranlib", "nm", "strip"):
         path = prefix / ("x86_64-w64-mingw32-" + tool)
         if not path.exists():
             raise SystemExit("cross tool not found: " + str(path))
-        options.append("--" + tool + "=" + str(path))
-    run([str(source / "configure"), *options], build, "configure.log")
+        options.append("--" + tool + "=" + os.path.relpath(path, build))
+    run(["src/configure", *options], build, "configure.log")
     run(["make", "-j8", "ffmpeg.exe"], build, "build.log")
     binary = build / "ffmpeg.exe"
     manifest = {"target": "windows/amd64", "profile": "eac3to-decoder-profile1",
@@ -106,6 +112,14 @@ def main():
         print("Built without runtime validation:", binary)
         print("Pass --runner to check the PCM fixtures and publish the decoder beside the CLI.")
     (out / "build-manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
+    if manifest["reference_pcm_checked"]:
+        record = args.output.resolve().parent / "build-manifest.json"
+        temporary = record.with_name(record.name + "." + uuid.uuid4().hex + ".tmp")
+        try:
+            shutil.copy2(out / "build-manifest.json", temporary)
+            os.replace(temporary, record)
+        finally:
+            temporary.unlink(missing_ok=True)
     print("Build logs:", out)
 
 

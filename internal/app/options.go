@@ -10,7 +10,7 @@ import (
 	"strings"
 )
 
-const Version = "0.1.0-dev"
+const Version = "0.1.0-alpha.1"
 
 type AudioOptions struct {
 	Depth                                          int
@@ -45,6 +45,7 @@ type Options struct {
 	Title                                                        int
 	Dest, FFmpeg, FFprobe                                        string
 	Report                                                       string
+	Interactive, NonInteractive                                  bool
 	Decoder                                                      string
 	referenceDecoder                                             bool
 	RawDepth, RawRate, RawChannels                               int
@@ -111,6 +112,10 @@ func ParseOptions(args []string) (Options, error) {
 			return "", fmt.Errorf("%s requires =VALUE", key)
 		}
 		switch key {
+		case "--interactive":
+			o.Interactive = true
+		case "--non-interactive":
+			o.NonInteractive = true
 		case "-h", "--help", "-help", "-?":
 			o.Help = true
 		case "--version", "-version":
@@ -405,6 +410,9 @@ func ParseOptions(args []string) (Options, error) {
 	}
 	if len(args) == 0 {
 		o.Help = true
+	}
+	if o.Interactive && o.NonInteractive {
+		return o, fmt.Errorf("--interactive and --non-interactive are mutually exclusive")
 	}
 	for _, option := range append([]*AudioOptions{&o.Defaults}, outputAudioOptions(o.Outputs)...) {
 		if option.SourceFPS != 0 && option.TargetFPS != 0 {

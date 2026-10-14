@@ -1,0 +1,9 @@
+The static Linux Cgo executable includes the GNU C Library runtime.
+The Linux matched decoder uses the normal shared libc and math libraries.
+
+The tested build host uses libc6 2.39-0ubuntu8.9. COPYRIGHT is reproduced
+unchanged from that package; its historical wording is retained.
+COPYING.LGPLv2.1 supplies the referenced GNU Lesser General Public License.
+The library source is not modified by this project.
+
+Upstream source: https://sourceware.org/glibc/
