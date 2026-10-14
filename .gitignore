@@ -1,0 +1,11 @@
+/bin/
+/build/
+/test-results/
+*.test
+/coverage.out
+/coverage.html
+*.prof
+/testdata/private/
+*.[mM][dD]
+__pycache__/
+*.py[cod]

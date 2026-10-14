@@ -1,0 +1,10 @@
+These AC-3 source fixtures contain generated 997 Hz sine tones, not movie audio.
+They were created with FFmpeg's AC-3 encoder using the rates, channel layouts,
+and bitrates indicated in their filenames and dialogue normalization -27 dB.
+Each file contains only its first complete frame. The stereo48_192 fixture has
+Dolby Surround mode 2. The surround48_640xbsi fixture additionally sets downmix
+mode 2, Lt/Rt center 0.70710678, Lt/Rt surround 0.5, Lo/Ro center 0.59460356,
+Lo/Ro surround 0.70710678, Surround EX mode 2, and A/D converter type 1.
+
+The regression hashes in silence_test.go are hashes of silent frames produced
+from these metadata settings and matched against the historical encoder.

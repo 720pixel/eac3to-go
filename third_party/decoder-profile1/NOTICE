@@ -1,0 +1,45 @@
+Native decoder profile1, isolated source build
+
+This package builds upstream FFmpeg 8.0.2 plus identified LGPL source changes.
+It contains no proprietary eac3to executable, DLL, or decompiler-generated code.
+All upstream source copyright and licensing notices remain in the extracted
+source tree. FFmpeg is licensed under LGPL 2.1 or later for this configuration;
+see COPYING.LGPLv2.1, COPYING.LGPLv3, and the upstream license overview.
+The build-time NASM tool uses its upstream BSD-style license, included
+as NASM-LICENSE. NASM is not linked into the resulting decoder executable.
+
+Source archive:
+https://ffmpeg.org/releases/ffmpeg-8.0.2.tar.xz
+SHA256 5d16962332603c427b3d0887fc12b9166d6ee2cb1108b1865dd2d5eb06a09505
+
+The consolidated profile1.patch contains changes derived from these upstream
+commits, retaining existing authorship and license notices:
+5ba2a2c841259a04742064da5e79e288f50ef9fa (fixed-point dither prerequisite)
+564f92cce23ae95399476617b8a1dc357f002a47 (fixed-point overlap prerequisite)
+2312ae4d10e10e315d12797b78155dbc0bc56cea (floating AC3 coefficients)
+Historical coupling and downmix changes are adapted from:
+434a425f10f0107441af2bd8241f8dd10056760c (Donald Graft)
+16cf66dd61ef777ab30a05b059ad25e496eb269f (Paul B Mahol)
+https://code.ffmpeg.org/FFmpeg/FFmpeg/pulls/23512.patch
+
+The adaptation preserves historical per-channel coupling dither and downmix
+initialization in the floating coefficient representation. An additional small
+dispatch change registers the FFT/MDCT kernels available in the historical
+x86-32 build, while the executable itself is native Linux amd64. The fixed-point
+AC3 decoder is not enabled. Normal AC3/EAC3 decode uses drc_scale=0; normal mode
+also uses err_detect=crccheck. The DTS decoder keeps automatic host SIMD dispatch.
+
+Build requirements: Linux amd64; GCC supporting -mfpmath=387 and
+-fexcess-precision=standard; GNU make; git apply; Python 3.12+ tar extraction;
+standard libc development files. The tested host uses GCC 13.3.0 and NASM
+2.16.03. Runtime uses the normal Linux C and math libraries. Complete exact
+commands and linked libraries are recorded in each build-manifest.json.
+No make install step is performed. System FFmpeg, libFDK, and library search
+paths are never modified. CPU differences can affect the same upstream SIMD
+dispatch on both Windows and Linux; current exact comparisons were performed
+on a host with SSE2, AVX, AVX2 and FMA3.
+
+This profile has a bounded validation corpus, not an assertion of complete
+compatibility with every AC3/EAC3/DTS extension or malformed stream. All source
+archives, build scripts, patches, and exact build manifests must accompany any
+redistribution as required by the applicable licenses.

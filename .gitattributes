@@ -1,0 +1,9 @@
+* text=auto
+*.go text eol=lf
+*.md text eol=lf
+*.cpp text eol=lf
+*.h text eol=lf
+*.png binary
+*.sup binary
+*.ac3 binary
+*.eac3 binary

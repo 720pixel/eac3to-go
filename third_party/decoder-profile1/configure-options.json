@@ -1,0 +1,21 @@
+[
+  "--disable-everything",
+  "--disable-autodetect",
+  "--disable-debug",
+  "--disable-doc",
+  "--disable-network",
+  "--disable-inline-asm",
+  "--disable-ffplay",
+  "--disable-ffprobe",
+  "--enable-encoder=pcm_f32le,pcm_f64le",
+  "--enable-filter=aresample,aformat",
+  "--enable-static",
+  "--disable-shared",
+  "--enable-decoder=ac3,eac3,dca",
+  "--extra-cflags=-mfpmath=387 -fexcess-precision=standard",
+  "--enable-muxer=pcm_f32le,pcm_f64le,wav",
+  "--extra-version=eac3to-decoder-profile1",
+  "--enable-demuxer=ac3,eac3,dts,matroska,mpegts,mpegps,mov,wav,w64,concat",
+  "--enable-parser=ac3,dca,h264,hevc,mpegvideo,vc1",
+  "--enable-protocol=file,pipe,concat,concatf"
+]

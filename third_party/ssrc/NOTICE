@@ -1,0 +1,28 @@
+This directory contains the libSsrc sample-rate converter distributed with
+eac3to 4.00. The original libSsrc wrapper was created by madshi.net on
+2008-10-19, based on Otachan's foobar2000 plugin and Naoki Shibata's SSRC.
+
+The resampling code is distributed under the GNU Lesser General Public License;
+see COPYING. The FFT and Bessel routines are by Takuya Ooura. See the original
+distribution description in README.original.txt for their attribution and terms.
+
+Linux portability changes, 2026-10-14:
+- Replace Windows headers and calling-convention declarations with portable
+  equivalents; provide the integer latency helper locally.
+- Move the DLL entry points out of ssrc.h into the C interface in internal/ssrc.
+- Add a header guard and use the standard sizeof(type) spelling.
+- Normalize source line endings and convert Japanese comments to UTF-8.
+- Expose a bound derived from the filter lengths for optional tail completion.
+  FinishComplete supplies zero extension through the existing processing path
+  and caps the result to the input duration. Finish retains the original flush.
+
+The filter coefficients, FFT, Bessel routine, sample processing, and buffering
+algorithm are retained. Different compilers and math libraries can produce
+floating-point rounding differences; Windows output equivalence needs separate
+sample comparisons.
+
+Windows amd64 portability additions:
+- Keep compiler-provided calling-convention macros when they already exist.
+- Save and restore each calling thread's x87 control word around initialization,
+  processing and flushing. Use extended precision consistently so Windows worker
+  thread defaults do not change filter coefficients or samples.

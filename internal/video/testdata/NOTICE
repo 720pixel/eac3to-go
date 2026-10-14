@@ -1,0 +1,19 @@
+colour25.h264 contains 50 synthetic 128x96 progressive pictures at 25 fps.
+It contains no external video, photographs, audio or other source media.
+
+Created with FFmpeg 6.1.1 and libx264 using this command:
+
+ffmpeg -f lavfi -i testsrc2=size=128x96:rate=25 -frames:v 50 -an \
+  -c:v libx264 -threads 1 -preset medium -crf 18 \
+  -x264-params keyint=25:min-keyint=25:scenecut=0:aud=1 colour25.h264
+
+SHA-256: 952b24b374aa835e7bfc7b12980f81c34ca9527075029a4d650e44f124c52423
+
+colour25.mkv was encoded with the same command and a Matroska output filename.
+It retains presentation and decoding timestamps for the B-frame sequence.
+Its encoded pictures match the elementary fixture.
+SHA-256: 17944ee20c4adcff045f936b7858a2a1cd34f75cf3b5601cc338d53c53e7c6aa
+
+The SPS expectations in the tests were checked against eac3to 4.00 extraction
+of this source in Matroska, using baseline, -changeTo24.000, and -slowdown.
+The tests preserve the input AUDs instead of adding duplicate delimiters.

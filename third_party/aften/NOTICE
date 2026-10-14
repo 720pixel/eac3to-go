@@ -1,0 +1,41 @@
+Aften: A/52 audio encoder by Justin Ruggles and Prakash Punnoor,
+based on Fabrice Bellard's FFmpeg AC-3 encoder. Individual files retain
+their original copyright and licensing notices. See COPYING.
+
+Upstream repository: https://git.code.sf.net/p/aften/code
+Vendored revision: ac1116da6a2b233f502bfb6ff87ac39692617459
+Revision date: 2008-11-02
+
+The surrounding internal/aften package provides streaming AC-3 encoding from
+interleaved float64 PCM and one silent AC-3 frame from validated source-frame
+metadata. It builds the single-precision encoder with one execution context,
+using the upstream CPU-dispatched MMX/SSE/SSE2/SSE3 implementations on x86
+and the scalar implementation elsewhere. Independent streams can encode
+concurrently. A small state array preserves the historical per-worker padding
+and bit-allocation counters without
+using the original worker lifecycle.
+
+Local source changes include these conditional adaptations:
+- libaften/window.c and libaften/mdct.c, AFTEN_LEGACY_TABLE_PRECISION:
+  retain extended intermediate precision when constructing the KBD window and
+  transform tables, matching the historical x87 initialization arithmetic.
+- libaften/a52enc.c, AFTEN_SAFE_COEFFICIENTS:
+  reject nonfinite or out-of-range transform coefficients before exponent
+  extraction can wrap and index outside its lookup table. Valid coefficients
+  are unchanged. The bridge reports this failure instead of clipping PCM.
+The source's original paths remain available when these macros are disabled.
+- libaften/aften.h and libaften/mem.h: support static Windows linking and use
+  the Windows aligned allocation pair without truncating 64-bit pointers.
+- libaften/x86/gas_support.h: select 64-bit registers by architecture, including
+  Windows LLP64, so CPU detection preserves the caller's complete RBX register.
+
+This revision retains the original exponent-strategy search order. Later
+upstream revisions changed that order and produce different silent frames.
+For zero PCM input, the scalar build has been compared with the corresponding
+historical encoder output at 32, 44.1 and 48 kHz. See package tests for the
+supported regression fixtures. Streaming tests cover selected generated PCM,
+channel layouts, bitrates and final-frame lengths; they do not establish
+equivalence for every PCM input, platform or AC-3 header combination.
+
+The C sources and build bridge are included so the linked library can be
+modified and the executable rebuilt using the normal Go/Cgo build command.

@@ -1,0 +1,16 @@
+{
+  "ffmpeg-8.0.2.tar.xz": {
+    "url": "https://ffmpeg.org/releases/ffmpeg-8.0.2.tar.xz",
+    "sha256": "5d16962332603c427b3d0887fc12b9166d6ee2cb1108b1865dd2d5eb06a09505",
+    "bytes": 11397612
+  },
+  "nasm-2.16.03.tar.xz": {
+    "url": "https://www.nasm.us/pub/nasm/releasebuilds/2.16.03/nasm-2.16.03.tar.xz",
+    "sha256": "1412a1c760bbd05db026b6c0d1657affd6631cd0a63cddb6f73cc6d4aa616148",
+    "bytes": 1032388
+  },
+  "profile1.patch": {
+    "sha256": "a6fe16fbf0ef838d03f923421ad36be1e5497073d5f654a2698cf66c319934d3",
+    "bytes": 15221
+  }
+}

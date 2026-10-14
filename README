@@ -1,0 +1,50 @@
+eac3to-go
+=========
+
+Native media demuxing and audio processing in Go, with eac3to 4.00 behavior
+as the compatibility reference. The project is under development. It is not
+yet a complete replacement for every Windows eac3to operation.
+
+  make build
+  make decoder
+  make windows
+  make check
+
+Use bin/eac3to --help for available options. Linux builds use native Cgo SSRC
+and Aften processing. Windows builds use an isolated checksum-pinned MinGW
+toolchain; see scripts/build-windows.py. Media probing and some codecs use
+separate FFmpeg/FFprobe executables. Existing system installations and libFDK
+support are never replaced by the build scripts.
+Disc probing requires FFprobe with libbluray enabled. Keep the FFmpeg/FFprobe
+pair together; explicit --ffmpeg and --ffprobe paths take priority.
+
+  eac3to /disc/BDMV
+  eac3to /disc/BDMV --main
+  eac3to /disc/BDMV -demux -destpath=/output
+  eac3to /disc/BDMV --playlist=00001 2: video.h264 3: audio.dts
+  eac3to input.wav output.flac
+  eac3to input.wav output.wav -25.000 -changeTo24.000 +100ms
+
+Quote paths containing spaces and title selectors such as '1)' when using a
+shell. Existing outputs require --force. Unsupported operations fail explicitly.
+--allow-unverified enables comparison paths; it does not establish parity.
+
+--report=/path/to/extraction.json writes a successful extraction manifest with
+the final output paths and residual mux delays. It is intended for muxers that
+need sample/frame-aligned extraction without dropping the remaining offset.
+The report is published only after every requested output succeeds.
+
+Playlist selection combines authored main-feature labels, navigation evidence,
+clip metadata, picture-language branches and playlist families. Ambiguous discs
+require --playlist. It does not claim universal Java/menu emulation.
+
+Keep compressed sources in their original codec for stream extraction. Audio
+conversion has codec-specific requirements; lossless output alone does not
+make every decoder equivalent. The separate pinned decoder profile has a
+bounded Windows comparison corpus. --reference-tail reproduces historical
+resampler tail behavior; normal draining preserves the complete filter tail.
+
+Tests use generated format fixtures and sample/byte comparisons. Full-disc
+test media and local comparison records are not distributed with this source.
+Third-party source retains its original licenses and attribution under
+third_party; build scripts and patches are included for rebuilding it.

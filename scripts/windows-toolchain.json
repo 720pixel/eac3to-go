@@ -1,0 +1,41 @@
+{
+  "host": "linux-amd64",
+  "target": "windows-amd64",
+  "packages": [
+    {
+      "file": "binutils-mingw-w64-x86-64_2.41.90.20240122-1ubuntu1+11.4_amd64.deb",
+      "url": "https://archive.ubuntu.com/ubuntu/pool/universe/b/binutils-mingw-w64/binutils-mingw-w64-x86-64_2.41.90.20240122-1ubuntu1+11.4_amd64.deb",
+      "sha256": "28bfabbf64a68813a56360bca056072af9ff71ef4090a4b8a8a085afcda3e4dd"
+    },
+    {
+      "file": "g++-mingw-w64-x86-64-posix_13.2.0-6ubuntu1+26.1_amd64.deb",
+      "url": "https://archive.ubuntu.com/ubuntu/pool/universe/g/gcc-mingw-w64/g++-mingw-w64-x86-64-posix_13.2.0-6ubuntu1+26.1_amd64.deb",
+      "sha256": "52c3613f386e462ae71105d1a0b2a48d866ccb048ad253acff629c5a2291252d"
+    },
+    {
+      "file": "gcc-mingw-w64-base_13.2.0-6ubuntu1+26.1_amd64.deb",
+      "url": "https://archive.ubuntu.com/ubuntu/pool/universe/g/gcc-mingw-w64/gcc-mingw-w64-base_13.2.0-6ubuntu1+26.1_amd64.deb",
+      "sha256": "a30c07e807e9874ea93909448c5d6d37f9569ebe60ad32de8e490aad198538a3"
+    },
+    {
+      "file": "gcc-mingw-w64-x86-64-posix-runtime_13.2.0-6ubuntu1+26.1_amd64.deb",
+      "url": "https://archive.ubuntu.com/ubuntu/pool/universe/g/gcc-mingw-w64/gcc-mingw-w64-x86-64-posix-runtime_13.2.0-6ubuntu1+26.1_amd64.deb",
+      "sha256": "aca6b438e0b55b11cedcf1170a1ee26e7979e34192e34f6e6389e560908a5bfc"
+    },
+    {
+      "file": "gcc-mingw-w64-x86-64-posix_13.2.0-6ubuntu1+26.1_amd64.deb",
+      "url": "https://archive.ubuntu.com/ubuntu/pool/universe/g/gcc-mingw-w64/gcc-mingw-w64-x86-64-posix_13.2.0-6ubuntu1+26.1_amd64.deb",
+      "sha256": "0855fa1d4a618550faac3a3e4352aa3226833b28184ad3c3b496a68a22c4eda2"
+    },
+    {
+      "file": "mingw-w64-common_11.0.1-3build1_all.deb",
+      "url": "https://archive.ubuntu.com/ubuntu/pool/universe/m/mingw-w64/mingw-w64-common_11.0.1-3build1_all.deb",
+      "sha256": "4a42fd30fbc3838c58c929d8a4882682fc12408bb7a0e6cafa913c0f0a57c187"
+    },
+    {
+      "file": "mingw-w64-x86-64-dev_11.0.1-3build1_all.deb",
+      "url": "https://archive.ubuntu.com/ubuntu/pool/universe/m/mingw-w64/mingw-w64-x86-64-dev_11.0.1-3build1_all.deb",
+      "sha256": "018480a62907fcca19c6bf2975ae01f5c92c23dee8c3cf7a8355c10bf7d42c6f"
+    }
+  ]
+}

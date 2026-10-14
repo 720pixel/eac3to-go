@@ -1,0 +1,28 @@
+Compressed delay fixtures
+
+Generated from 5,120 stereo 16-bit PCM frames at 48 kHz. Each channel uses
+round-to-even(3072 * sin(2*pi*(997 + 127*channel)*frame/48000)), with
+1024 + 128*channel added at multiples of 97 + 13*channel.
+
+The AC-3 input was encoded by eac3to 4.00 at 192 kbps. The DTS input was
+encoded by FFmpeg 6.1.1 using its dca encoder at 768 kbps. Expected delay
+output hashes in frame_delay_test.go were captured from eac3to 4.00.
+Only generated test signals are included.
+
+Rate conversion fixture
+
+rate-stereo48.flac contains 96,000 stereo 16-bit frames at 48 kHz. Its channels
+are trunc(8000*sin(2*pi*f*frame/48000)) at 997 Hz and 211 Hz. FFmpeg 6.1.1
+encoded the lossless FLAC. Windows eac3to 4.00 rate conversions provide the
+sample-count and PCM comparisons used by the rate tests.
+
+E-AC-3 core filename fixture
+
+core-independent-stereo48.eac3 contains three independent E-AC-3 silence
+frames at 48 kHz, stereo, 192 kbps (bsid 16, strmtyp 0). Generate with
+FFmpeg 6.1.1:
+ffmpeg -f lavfi -i anullsrc=r=48000:cl=stereo -t 0.096 -c:a eac3 -b:a 192k -f eac3 core-independent-stereo48.eac3
+SHA256: 4211435953c3e6ec024c99fce3251bada344b0a00d2a0245eeb1b1bbbb3322c2
+eac3to 4.00 with destination.ac3 -core -keepDialnorm preserves every byte.
+This fixture establishes the .ac3 filename behavior for independent E-AC-3;
+it does not contain or establish extraction of a legacy AC-3 companion.
