@@ -25,6 +25,10 @@ type clipScan struct {
 }
 
 func scanPlaylist(ctx context.Context, p *bluray.Playlist, o Options) ([]clipScan, error) {
+	return scanPlaylistPIDs(ctx, p, o, nil)
+}
+
+func scanPlaylistPIDs(ctx context.Context, p *bluray.Playlist, o Options, selected map[uint16]bool) ([]clipScan, error) {
 	paths, err := bluray.ResolveClips(p)
 	if err != nil {
 		return nil, err
@@ -38,7 +42,7 @@ func scanPlaylist(ctx context.Context, p *bluray.Playlist, o Options) ([]clipSca
 				video[stream.PID] = true
 			}
 		}
-		scan, err := transport.ScanFile(ctx, paths[i], transport.ScanConfig{VideoPIDs: video})
+		scan, err := transport.ScanFile(ctx, paths[i], transport.ScanConfig{VideoPIDs: video, PIDs: selected})
 		if err != nil {
 			return fmt.Errorf("clip %s: %w", item.ClipID, err)
 		}

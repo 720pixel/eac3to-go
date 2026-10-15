@@ -282,7 +282,7 @@ func (d *Demuxer) emit(state *pidState) error {
 	} else if pes.PTS != NoTimestamp {
 		state.outside = pes.PTS < state.segment.In90k || pes.PTS >= state.segment.Out90k
 	}
-	drop := d.cfg.Strict && state.outside
+	drop := (d.cfg.Strict || d.cfg.StrictPIDs[state.pid]) && state.outside
 	if state.outside {
 		state.stats.OutsideWindowPES++
 		if err := d.audit(Audit{Kind: AuditOutsideWindow, PID: state.pid, Segment: pes.Segment, ByteOffset: pes.ByteOffset, PTS: pes.PTS, Bytes: len(pes.Payload), Dropped: drop}); err != nil {

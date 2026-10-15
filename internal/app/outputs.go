@@ -273,19 +273,19 @@ func makeOutput(s *Source, t Track, r OutputRequest, o Options) (Output, error) 
 			var core *Stream
 			for i := range s.Probe.Streams {
 				c := &s.Probe.Streams[i]
-				if c.Codec == "ac3" && ((c.ID != "" && c.ID == st.ID) || len(s.Probe.Streams) == 2 && strings.Contains(s.Probe.Format.Name, "truehd")) {
+				if (c.Codec == "ac3" || c.Codec == "eac3") && ((c.ID != "" && c.ID == st.ID) || len(s.Probe.Streams) == 2 && strings.Contains(s.Probe.Format.Name, "truehd")) {
 					core = c
 					break
 				}
 			}
 			if core == nil {
-				return out, fmt.Errorf("this TrueHD stream has no separately demuxable AC-3 companion; -core cannot create one")
+				return out, fmt.Errorf("this TrueHD stream has no separately demuxable AC-3/E-AC-3 companion; -core cannot create one")
 			}
 			out.Track.Stream = core
 			out.TrueHDCompanion = true
 			st = core
-			if ext(p) != "ac3" {
-				return out, fmt.Errorf("TrueHD AC-3 companion output must be .ac3")
+			if ext(p) != core.Codec {
+				return out, fmt.Errorf("TrueHD %s companion output must be .%s", core.Codec, core.Codec)
 			}
 		case "eac3":
 			out.BSF = "eac3_core"

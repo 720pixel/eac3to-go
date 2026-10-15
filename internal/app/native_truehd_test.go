@@ -174,6 +174,75 @@ func TestNativeTrueHDCompanionDoesNotDeleteBoundaryDuplicate(t *testing.T) {
 	}
 }
 
+func TestNativeTrueHDAndEnhancedCompanionAreSeparatePayloads(t *testing.T) {
+	s, thd, _ := truehdAppSource(t, 1, 0)
+	s.Probe.Streams[2].Codec = "eac3"
+	companion, err := os.ReadFile(filepath.Join("testdata", "core-independent-stereo48.eac3"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var vc, cc byte
+	packets := truehdPESPackets(0x1011, 0xe0, -1, 900000, []byte{0, 0, 1, 9, 0xf0}, &vc)
+	packets = append(packets, truehdPESPackets(0x1100, 0xfd, 0x72, 900000, thd, &cc)...)
+	packets = append(packets, truehdPESPackets(0x1100, 0xfd, 0x76, 900000, companion, &cc)...)
+	packets = append(packets, truehdPESPackets(0x1011, 0xe0, -1, 990000, []byte{0, 0, 1, 9, 0xf0}, &vc)...)
+	if err := os.WriteFile(s.Paths[0], packets, 0600); err != nil {
+		t.Fatal(err)
+	}
+	dir := t.TempDir()
+	main, core := filepath.Join(dir, "main.thd"), filepath.Join(dir, "compatibility.eac3")
+	o := Options{Quiet: true, Outputs: []OutputRequest{
+		truehdOutputOptions(2, main, true, 0, false),
+		truehdOutputOptions(2, core, true, 0, true),
+	}}
+	outputs, err := buildOutputs(s, o)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := execute(context.Background(), Tools{}, s, outputs, o, io.Discard, io.Discard); err != nil {
+		t.Fatal(err)
+	}
+	for path, want := range map[string][]byte{main: thd, core: companion} {
+		got, err := os.ReadFile(path)
+		if err != nil || !bytes.Equal(got, want) {
+			t.Fatalf("separate output %s did not preserve its own payload: %v", filepath.Base(path), err)
+		}
+	}
+	bad := truehdOutputOptions(2, filepath.Join(dir, "misnamed.ac3"), true, 0, true)
+	if _, err := makeOutput(s, s.Tracks[1], bad, Options{}); err == nil {
+		t.Fatal("E-AC-3 companion was mislabeled as AC-3")
+	}
+}
+
+func TestPlaylistVideoWindowPreservesSeparateTrueHDAndAC3(t *testing.T) {
+	s, thd, core := truehdAppSource(t, 1, 0)
+	root := filepath.Dir(filepath.Dir(filepath.Dir(s.Paths[0])))
+	s.Playlist = &bluray.Playlist{Path: filepath.Join(root, "BDMV", "PLAYLIST", "00000.mpls"), Items: []bluray.PlayItem{{ClipID: "00000", CodecID: "M2TS", InTime: 450000, OutTime: 450450, Streams: []bluray.Stream{{EntryType: 1, Kind: "video", PID: 0x1011}, {EntryType: 1, Kind: "audio", PID: 0x1100}}}}}
+	dir := t.TempDir()
+	video := Output{Track: s.Tracks[0], Copy: true, Format: "h264", Codec: "h264", Path: filepath.Join(dir, "video.h264"), Stage: filepath.Join(dir, "video.h264")}
+	o := Options{Quiet: true, PlaylistVideoWindow: true, Outputs: []OutputRequest{
+		truehdOutputOptions(2, filepath.Join(dir, "audio.thd"), true, 0, false),
+		truehdOutputOptions(2, filepath.Join(dir, "audio.ac3"), true, 0, true),
+	}}
+	outputs, err := buildOutputs(s, o)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for i := range outputs {
+		outputs[i].Stage = outputs[i].Path
+	}
+	outputs = append(outputs, video)
+	if _, err := copyNativeStreams(context.Background(), s, outputs, o, io.Discard); err != nil {
+		t.Fatal(err)
+	}
+	for path, want := range map[string][]byte{video.Path: {0, 0, 1, 9, 0xf0}, outputs[0].Path: thd, outputs[1].Path: bytes.Repeat(core, 3)} {
+		got, err := os.ReadFile(path)
+		if err != nil || !bytes.Equal(got, want) {
+			t.Fatalf("video-only window altered %s: %d bytes, want %d; %v", filepath.Base(path), len(got), len(want), err)
+		}
+	}
+}
+
 func TestNativeTrueHDCompanionPaddingUsesAC3Policy(t *testing.T) {
 	if !aften.Available() {
 		t.Skip("native AC3 padding requires Cgo")
@@ -336,7 +405,7 @@ func TestTrueHDDryRunShowsFinalPathWithoutDirectories(t *testing.T) {
 	}
 }
 
-func TestTrueHDPlaylistQualityGatesRemainExplicit(t *testing.T) {
+func TestTrueHDPlaylistCopiesAndRemainingQualityGates(t *testing.T) {
 	s, _, _ := truehdAppSource(t, 2, 0)
 	for _, core := range []bool{false, true} {
 		path := filepath.Join(t.TempDir(), "out.thd")
@@ -348,13 +417,18 @@ func TestTrueHDPlaylistQualityGatesRemainExplicit(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if err = validateParityPaths(s, outputs, o); err == nil {
-			t.Fatal("unverified authored TrueHD playlist accepted without override")
+		if err = validateParityPaths(s, outputs, o); err != nil {
+			t.Fatal("validated TrueHD playlist copying was blocked", err)
 		}
 		if err = validateParityPaths(s, outputs, Options{AllowUnverified: true}); err != nil {
 			t.Fatal(err)
 		}
 	}
+	s.Playlist = nil
+	if err := validateParityPaths(s, []Output{{Track: s.Tracks[1], Copy: true, Codec: "truehd", Format: "truehd"}}, Options{}); err == nil {
+		t.Fatal("unvalidated physical joins bypassed their quality gate")
+	}
+	s.Playlist = &bluray.Playlist{Items: []bluray.PlayItem{{}}}
 	s.Playlist.Items = s.Playlist.Items[:1]
 	out := Output{Track: s.Tracks[1], Copy: true, Codec: "truehd", Format: "truehd"}
 	if err := validateParityPaths(s, []Output{out}, Options{}); err != nil {

@@ -45,7 +45,7 @@ PCM:   -override -24 -48000 -6 -little (or -big)
 Video: -changeTo24.000, -slowdown, -speedup (H.264 elementary output)
 Disc:  --main, --playlist=NNNNN, --segments, --compare-playlists=ID,ID,
        --explain, --language=eng (authored picture-language preference),
-       -showall, -sf, -sl, -strictpl,
+       -showall, -sf, -sl, -strictpl, --playlist-video-window,
        -include_hidden, -minDuration=SECONDS, -collapse=N, -auditpl
 PGS:   -forced
 Other: -test, -check, --json, --dry-run, --force, --quiet,
@@ -300,7 +300,7 @@ func validateParityPaths(s *Source, outputs []Output, o Options) error {
 		st := out.Track.Stream
 		multiple := s.Playlist != nil && len(s.Playlist.Items) > 1 || s.Playlist == nil && len(s.Paths) > 1
 		truehdTrack := st.Codec == "truehd" || out.TrueHDCompanion || sharedTrueHDPID(s, st)
-		if truehdTrack && multiple {
+		if truehdTrack && multiple && !(s.Playlist != nil && out.Copy && nativeCopySupported(out)) {
 			return fmt.Errorf("TrueHD and companion alignment across segments still needs an authored-disc comparison; --allow-unverified permits comparison runs only")
 		}
 		if truehdTrack && o.StrictPL && s.Playlist != nil {

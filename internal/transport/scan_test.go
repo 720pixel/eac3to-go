@@ -193,6 +193,28 @@ func TestScanRejectsMalformedInputAndCancellation(t *testing.T) {
 	}
 }
 
+func TestScanKnownPIDsIgnoresUnrelatedClockStuffing(t *testing.T) {
+	video, _ := packPES(0x1011, makePES(0xe0, 1000, NoTimestamp, []byte{1}, false), 0, 188, 184)
+	clock := bytes.Repeat([]byte{0}, 188)
+	clock[0], clock[1], clock[2], clock[3], clock[4] = 0x47, 0x10, 0x01, 0x20, 183
+	input := append(append([]byte(nil), clock...), video...)
+	path := scanFixture(t, input)
+	if _, err := ScanFile(context.Background(), path, ScanConfig{PacketSize: 188}); err == nil {
+		t.Fatal("unfiltered audit accepted invalid clock stuffing")
+	}
+	result, err := ScanFile(context.Background(), path, ScanConfig{PacketSize: 188, PIDs: map[uint16]bool{0x1011: true}})
+	if err != nil || !result.HasPTS || result.FirstPTS != 1000 || result.PacketsScanned != 2 {
+		t.Fatalf("unrelated metadata blocked media timing: %+v, %v", result, err)
+	}
+	if _, err := ScanFile(context.Background(), path, ScanConfig{PacketSize: 188, PIDs: map[uint16]bool{0x1001: true}}); err == nil {
+		t.Fatal("selected packet validation was weakened")
+	}
+	input[0] = 0
+	if _, err := ScanFile(context.Background(), scanFixture(t, input), ScanConfig{PacketSize: 188, PIDs: map[uint16]bool{0x1011: true}}); err == nil {
+		t.Fatal("unselected packets bypassed the transport sync check")
+	}
+}
+
 func TestTimestampDelta(t *testing.T) {
 	for _, tc := range []struct{ current, previous, want int64 }{{10, 0, 10}, {0, 10, -10}, {10, timestampWrap - 10, 20}, {timestampWrap - 10, 10, -20}, {2*timestampWrap + 10, timestampWrap + 20, -10}} {
 		got, err := TimestampDelta(tc.current, tc.previous)

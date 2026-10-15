@@ -21,6 +21,8 @@ type Config struct {
 	OnBoundary func(Boundary) error
 	OnAudit    func(Audit) error
 	Strict     bool
+	// StrictPIDs applies playlist windows to selected streams independently.
+	StrictPIDs map[uint16]bool
 	// MaxPESBytes bounds each selected PID's assembly buffer. Zero means 16 MiB.
 	MaxPESBytes int
 	// AllowRetransmissions permits skipping an identical TS packet repeated with

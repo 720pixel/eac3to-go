@@ -111,6 +111,29 @@ func TestWindowKeepsFull33BitTimestamp(t *testing.T) {
 	}
 }
 
+func TestPlaylistWindowCanSelectVideoWithoutCuttingAudio(t *testing.T) {
+	var input []byte
+	for _, pid := range []uint16{0x1011, 0x1100} {
+		var cc byte
+		for _, pts := range []int64{1000, 2000} {
+			packets, next := packPES(pid, makePES(0xbd, pts, NoTimestamp, []byte{1}, false), cc, 188, 184)
+			cc = next
+			input = append(input, packets...)
+		}
+	}
+	var video, audio []PES
+	demux, err := New(Config{Handlers: map[uint16]func(PES) error{0x1011: retain(&video), 0x1100: retain(&audio)}, StrictPIDs: map[uint16]bool{0x1011: true}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := demux.ReadSegment(context.Background(), bytes.NewReader(input), Segment{Index: 0, HasWindow: true, In90k: 1000, Out90k: 2000}); err != nil {
+		t.Fatal(err)
+	}
+	if err := demux.Finish(); err != nil || len(video) != 1 || len(audio) != 2 || demux.Stats().ByPID[0x1011].DroppedPES != 1 || demux.Stats().ByPID[0x1100].DroppedPES != 0 {
+		t.Fatalf("playlist filtering affected the wrong stream: video %d audio %d, %v", len(video), len(audio), err)
+	}
+}
+
 func TestContinuousPESCrossesSegmentBoundary(t *testing.T) {
 	raw := makePES(0xbd, 987654, NoTimestamp, bytes.Repeat([]byte{0x31}, 700), false)
 	packets, _ := packPES(0x100, raw, 14, 192, 184)

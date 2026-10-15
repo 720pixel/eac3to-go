@@ -28,8 +28,28 @@ func sourceNativeScans(ctx context.Context, s *Source, o Options) ([]clipScan, e
 	}
 	var scans []clipScan
 	var err error
+	pids := map[uint16]bool{}
+	for _, st := range s.Probe.Streams {
+		if st.Type == "video" || st.Type == "audio" || st.Type == "subtitle" {
+			if pid, err := strconv.ParseUint(st.ID, 0, 13); err == nil && pid < 0x1fff {
+				pids[uint16(pid)] = true
+			}
+		}
+	}
+	for _, track := range s.Tracks {
+		if track.Stream != nil {
+			if pid, err := strconv.ParseUint(track.Stream.ID, 0, 13); err == nil && pid < 0x1fff {
+				pids[uint16(pid)] = true
+			}
+		}
+	}
 	if s.Playlist != nil {
-		scans, err = scanPlaylist(ctx, s.Playlist, o)
+		for _, item := range s.Playlist.Items {
+			for pid := range item.ListedPIDs() {
+				pids[pid] = true
+			}
+		}
+		scans, err = scanPlaylistPIDs(ctx, s.Playlist, o, pids)
 	} else {
 		if !nativeTransportSource(s) {
 			return nil, fmt.Errorf("source is not a supported native transport input")
@@ -42,7 +62,7 @@ func sourceNativeScans(ctx context.Context, s *Source, o Options) ([]clipScan, e
 				}
 			}
 		}
-		scan, e := transport.ScanFile(ctx, s.Paths[0], transport.ScanConfig{VideoPIDs: video})
+		scan, e := transport.ScanFile(ctx, s.Paths[0], transport.ScanConfig{VideoPIDs: video, PIDs: pids})
 		if e != nil {
 			return nil, e
 		}

@@ -16,6 +16,9 @@ const timestampWrap int64 = 1 << 33
 type ScanConfig struct {
 	PacketSize int
 	VideoPIDs  map[uint16]bool
+	// PIDs restricts timestamp parsing to known elementary streams. Packet
+	// boundaries and sync bytes remain checked for the complete input.
+	PIDs map[uint16]bool
 	// WindowBytes is the size of each aligned beginning/end sample. Zero uses
 	// 4 MiB. FullScan reads the whole file regardless of WindowBytes.
 	WindowBytes int64
@@ -177,7 +180,7 @@ func ScanFile(ctx context.Context, path string, cfg ScanConfig) (ScanResult, err
 	ranges := make([]map[uint16]*timestampRange, len(result.Extents))
 	for i, extent := range result.Extents {
 		ranges[i] = make(map[uint16]*timestampRange)
-		if err := scanExtent(ctx, file, extent, result.PacketSize, ranges[i], &result); err != nil {
+		if err := scanExtent(ctx, file, extent, result.PacketSize, cfg.PIDs, ranges[i], &result); err != nil {
 			return result, err
 		}
 	}
@@ -261,7 +264,7 @@ type scanPID struct {
 	start               int64
 }
 
-func scanExtent(ctx context.Context, file io.ReaderAt, extent ScanExtent, packetSize int, ranges map[uint16]*timestampRange, result *ScanResult) error {
+func scanExtent(ctx context.Context, file io.ReaderAt, extent ScanExtent, packetSize int, selected map[uint16]bool, ranges map[uint16]*timestampRange, result *ScanResult) error {
 	reader := bufio.NewReaderSize(io.NewSectionReader(file, extent.Offset, extent.Length), 256<<10)
 	states := make(map[uint16]*scanPID)
 	var buffer [192]byte
@@ -281,7 +284,7 @@ func scanExtent(ctx context.Context, file io.ReaderAt, extent ScanExtent, packet
 			return &ParseError{ByteOffset: offset, PID: -1, Problem: "missing transport sync byte"}
 		}
 		pid := binary.BigEndian.Uint16(packet[1:3]) & 0x1fff
-		if pid == 0x1fff {
+		if pid == 0x1fff || selected != nil && !selected[pid] {
 			continue
 		}
 		state := states[pid]

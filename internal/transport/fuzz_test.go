@@ -48,7 +48,7 @@ func FuzzTimestampScan(f *testing.F) {
 		extent := ScanExtent{Length: int64(len(data) / size * size)}
 		ranges := make(map[uint16]*timestampRange)
 		var result ScanResult
-		_ = scanExtent(context.Background(), bytes.NewReader(data), extent, size, ranges, &result)
+		_ = scanExtent(context.Background(), bytes.NewReader(data), extent, size, nil, ranges, &result)
 		if result.BytesScanned > int64(len(data)) {
 			t.Fatal("scan exceeded input extent")
 		}

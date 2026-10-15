@@ -68,7 +68,7 @@ func nativeCopySupported(out Output) bool {
 	switch out.Track.Stream.Codec {
 	case "pcm_bluray":
 		return out.NativePCM
-	case "ac3":
+	case "ac3", "eac3":
 		return out.BSF == "" && out.Format == out.Track.Stream.Codec
 	case "dts":
 		return out.Format == "dts" && (out.BSF == "" || out.BSF == "dca_core")
@@ -83,7 +83,7 @@ func nativeCopySupported(out Output) bool {
 }
 
 func sharedTrueHDPID(s *Source, stream *Stream) bool {
-	if stream == nil || stream.Codec != "ac3" || stream.ID == "" {
+	if stream == nil || stream.Codec != "ac3" && stream.Codec != "eac3" || stream.ID == "" {
 		return false
 	}
 	pid, err := strconv.ParseUint(stream.ID, 0, 13)
@@ -113,9 +113,6 @@ func copyNativeStreams(ctx context.Context, s *Source, outputs []Output, o Optio
 			continue
 		}
 		if nativeCopySupported(out) {
-			if s.Playlist != nil && len(s.Playlist.Items) > 1 && (out.Codec == "truehd" || companion) && !o.AllowUnverified {
-				return nil, fmt.Errorf("TrueHD playlist continuity still needs an authored-disc comparison; --allow-unverified permits the experimental Windows postprocess only")
-			}
 			chosen = append(chosen, out)
 		} else {
 			remaining = append(remaining, out)
@@ -175,7 +172,7 @@ func copyNativeStreams(ctx context.Context, s *Source, outputs []Output, o Optio
 			track = &nativeTrack{ctx: ctx, log: log, pid: pid, codec: st.Codec, firstPTS: transport.NoTimestamp, delayMS: delay, checkCRC: !o.Fast, truehdCompanion: companion}
 			groups[key] = track
 		}
-		if previous := codecs[pid]; previous != "" && previous != st.Codec && !((previous == "truehd" && companion) || (previous == "ac3" && st.Codec == "truehd")) {
+		if previous := codecs[pid]; previous != "" && previous != st.Codec && !((previous == "truehd" && companion) || ((previous == "ac3" || previous == "eac3") && st.Codec == "truehd")) {
 			return nil, fmt.Errorf("PID 0x%04x has conflicting codecs", pid)
 		}
 		codecs[pid] = st.Codec
@@ -200,7 +197,7 @@ func copyNativeStreams(ctx context.Context, s *Source, outputs []Output, o Optio
 		tracks = append(tracks, track)
 		byPID[key.pid] = append(byPID[key.pid], track)
 		if track.codec == "truehd" {
-			if err := track.setupTrueHD(len(scans) > 1 && o.AllowUnverified); err != nil {
+			if err := track.setupTrueHD(len(scans) > 1); err != nil {
 				return nil, err
 			}
 		}
@@ -295,9 +292,19 @@ func copyNativeStreams(ctx context.Context, s *Source, outputs []Output, o Optio
 		}
 		return tracks[i].delayMS < tracks[j].delayMS
 	})
+	windowed := map[uint16]bool{}
+	if o.PlaylistVideoWindow && s.Playlist != nil {
+		for _, out := range chosen {
+			if out.Track.Kind == "video" {
+				pid, _ := strconv.ParseUint(out.Track.Stream.ID, 0, 13)
+				windowed[uint16(pid)] = true
+			}
+		}
+	}
 	demux, err := transport.New(transport.Config{
-		Handlers: handlers,
-		Strict:   o.StrictPL,
+		Handlers:   handlers,
+		Strict:     o.StrictPL,
+		StrictPIDs: windowed,
 		OnBoundary: func(boundary transport.Boundary) error {
 			if !boundary.Before {
 				return nil

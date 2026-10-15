@@ -10,7 +10,7 @@ import (
 	"strings"
 )
 
-const Version = "0.1.0-alpha.2"
+const Version = "0.1.0-alpha.3"
 
 type AudioOptions struct {
 	Depth                                          int
@@ -55,6 +55,7 @@ type Options struct {
 	RawOverride                                                  bool
 	Fast                                                         bool
 	AllowUnverified                                              bool
+	PlaylistVideoWindow                                          bool
 	Main                                                         bool
 	Playlist                                                     string
 	Jobs, Threads                                                int
@@ -244,6 +245,8 @@ func ParseOptions(args []string) (Options, error) {
 			o.SkipLast = true
 		case "-strictpl":
 			o.StrictPL = true
+		case "--playlist-video-window":
+			o.PlaylistVideoWindow = true
 		case "-auditpl":
 			o.AuditPL = true
 		case "-collapse":

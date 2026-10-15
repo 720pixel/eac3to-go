@@ -58,6 +58,25 @@ Quote paths containing spaces and title selectors such as '1)' when using a
 shell. Existing outputs require --force. Unsupported operations fail explicitly.
 --allow-unverified enables comparison paths; it does not establish parity.
 
+TrueHD and its embedded Dolby companion are extracted as separate elementary
+files. A .thd output contains only checked TrueHD access units. Request -core
+on that source for a separate .ac3 file, or .eac3 when that is the actual
+companion codec; a mismatched extension is rejected. No compatibility audio
+is encoded by -core, and no companion is invented for pure TrueHD.
+
+  eac3to /disc/BDMV --playlist=00001 3: main.thd -keepDialnorm 3: compatible.ac3 -core -keepDialnorm
+
+Native playlist copying applies the checked multi-segment TrueHD postprocess
+and retains the separate companion. Timing scans inspect known media PIDs so
+unrelated clock and program-table padding cannot block extraction. Transport
+boundaries, selected streams and codec frames remain checked. Strict TrueHD
+playlist-start trimming and unvalidated physical joins retain their explicit
+quality gates.
+
+--playlist-video-window limits video PES to the authored playlist in/out points
+while leaving audio framing and delay rules unchanged. It omits video padding
+beyond a clip's authored presentation without cutting into a TrueHD major unit.
+
 Interactive terminals open a wizard when launched without a source or with
 only a source. It lists playlists with their recommendation evidence, accepts
 track numbers or ranges, and asks for an output format and destination for
