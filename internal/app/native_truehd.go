@@ -86,6 +86,9 @@ func prepareTrueHDOutputs(ctx context.Context, s *Source, outputs []Output, o Op
 			return nil, fmt.Errorf("TrueHD delay needs a representable whole number of milliseconds")
 		}
 		var source int64
+		if offset, ok := matroskaAudioOffset(s, out.Track.Stream); ok {
+			source = offset
+		}
 		if nativeTransportSource(s) {
 			if !haveTiming {
 				scans, err := sourceNativeScans(ctx, s, o)

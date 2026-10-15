@@ -25,6 +25,10 @@ type filterResult struct {
 
 func copyStreams(ctx context.Context, t Tools, s *Source, outputs []Output, o Options, log io.Writer) error {
 	var err error
+	outputs, err = copyStandaloneSubtitles(ctx, s, outputs)
+	if err != nil {
+		return err
+	}
 	outputs, err = copyNativeStreams(ctx, s, outputs, o, log)
 	if err != nil {
 		return err

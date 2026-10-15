@@ -6,6 +6,7 @@ import (
 	"math"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strconv"
 	"strings"
 	"unicode/utf16"
@@ -26,6 +27,14 @@ type menuLabel struct {
 type menuItem struct {
 	id      uint32
 	in, out float32
+	angles  []menuAngle
+}
+
+type menuAngle struct{ audio, subtitles []menuStream }
+type menuStream struct {
+	name, tag           string
+	number              uint32
+	language, language2 string
 }
 
 type menuReader struct{ reader }
@@ -127,13 +136,17 @@ func parseMenuProject(data []byte) ([]menuLabel, error) {
 			}
 			label.items = append(label.items, item)
 			for angles := r.count(38); angles > 0 && r.err == nil; angles-- {
+				angle := menuAngle{}
 				r.u32() // primary-video field
 				r.fields("ssiiiiss")
 				for audio := r.count(12); audio > 0 && r.err == nil; audio-- {
-					r.fields("ssiss")
+					angle.audio = append(angle.audio, menuStream{r.text(), r.text(), r.u32(), r.text(), r.text()})
 				}
 				for subs := r.count(18); subs > 0 && r.err == nil; subs-- {
-					r.fields("ssisssss")
+					stream := menuStream{name: r.text(), tag: r.text(), number: r.u32()}
+					r.fields("sss") // rendering options and stream plane
+					stream.language, stream.language2 = r.text(), r.text()
+					angle.subtitles = append(angle.subtitles, stream)
 				}
 				for video := r.count(18); video > 0 && r.err == nil; video-- {
 					r.fields("ssiiis")
@@ -141,6 +154,7 @@ func parseMenuProject(data []byte) ([]menuLabel, error) {
 				for audio := r.count(12); audio > 0 && r.err == nil; audio-- {
 					r.fields("ssiss")
 				}
+				label.items[len(label.items)-1].angles = append(label.items[len(label.items)-1].angles, angle)
 			}
 		}
 		label.marks = r.count(10)
@@ -245,8 +259,11 @@ func readMenuLabels(bdmv string) (map[uint32]menuLabel, []string) {
 		}
 		for _, label := range parsed {
 			label.source = filepath.Join("JAR", entry.Name(), "bluray_project.bin")
-			if previous, exists := labels[label.id]; exists && previous.name != label.name {
-				conflicts[label.id] = true
+			if previous, exists := labels[label.id]; exists {
+				previous.source = label.source
+				if !reflect.DeepEqual(previous, label) {
+					conflicts[label.id] = true
+				}
 			}
 			labels[label.id] = label
 		}

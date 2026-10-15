@@ -102,6 +102,10 @@ func prepareOutputReportTiming(s *Source, outputs []Output) {
 	for i := range outputs {
 		out := &outputs[i]
 		out.muxTiming = new(outputMuxTiming)
+		if offset, ok := matroskaAudioOffset(s, out.Track.Stream); ok && out.Request.Options.DelayMS == 0 && !(out.Codec == "truehd" && out.TrueHDPrepared) {
+			setOutputMuxDelay(*out, offset)
+			continue
+		}
 		switch {
 		case out.Track.Kind == "chapters", !out.Copy, out.NativePCM, strings.HasPrefix(out.Codec, "pcm_"):
 			// PCM processing applies source+manual delay in sample space.
@@ -113,6 +117,9 @@ func prepareOutputReportTiming(s *Source, outputs []Output) {
 			setOutputMuxDelay(*out, 0)
 		case s.Playlist != nil && out.Codec == "hdmv_pgs_subtitle" && out.Format == "sup":
 			// Native playlist PGS is already rebased against the video origin.
+			setOutputMuxDelay(*out, 0)
+		case standaloneSubtitle(s, *out):
+			// Cue timestamps survive a direct standalone subtitle copy.
 			setOutputMuxDelay(*out, 0)
 		case s.Playlist == nil && out.Track.Stream != nil && len(s.Paths) == 1 && s.Probe.Format.Name == out.Track.Stream.Codec && out.Request.Options.DelayMS == 0:
 			// Plain elementary audio has no source container offset.

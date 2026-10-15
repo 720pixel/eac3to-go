@@ -29,7 +29,11 @@ func findDecoder(o Options, t *Tools) error {
 		}
 	}
 	if path == "" {
-		return nil
+		if found, err := exec.LookPath(executableName("eac3to-decoder")); err == nil {
+			path = found
+		} else {
+			return nil
+		}
 	}
 	resolved, err := exec.LookPath(path)
 	if err != nil {

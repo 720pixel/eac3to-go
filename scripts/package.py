@@ -20,6 +20,7 @@ ROOT = Path(__file__).resolve().parents[1]
 SOURCE_TOP = {"Makefile", "README", "LICENSE", "COPYING", "go.mod", "go.sum"}
 SOURCE_DIRS = {"cmd", "internal", "scripts", "third_party"}
 NOTICES = {
+    "ulikunitz-xz": ("LICENSE", "NOTICE"),
     "ssrc": ("COPYING", "NOTICE", "README.original.txt"),
     "aften": ("COPYING", "NOTICE"),
     "decoder-profile1": ("COPYING.LGPLv2.1", "COPYING.LGPLv3", "LICENSE.ffmpeg", "NASM-LICENSE", "NOTICE"),

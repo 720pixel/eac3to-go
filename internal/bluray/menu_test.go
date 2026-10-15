@@ -9,7 +9,7 @@ import (
 	"testing"
 )
 
-func fixtureMenu(playlists []*Playlist, names []string) []byte {
+func fixtureMenu(playlists []*Playlist, names []string, streamNames ...map[uint16]string) []byte {
 	var b fixtureBytes
 	text := func(s string) { b.u16(uint16(len(s))); b.str(s) }
 	number := func(v float64) { b.u32(math.Float32bits(float32(v))) }
@@ -43,9 +43,36 @@ func fixtureMenu(playlists []*Playlist, names []string) []byte {
 			}
 			text("23.976")
 			text("16:9")
-			for k := 0; k < 4; k++ {
-				b.u32(0)
+			for _, kind := range []string{"audio", "subtitle"} {
+				var streams []Stream
+				for _, st := range item.Streams {
+					if st.Kind == kind {
+						streams = append(streams, st)
+					}
+				}
+				b.u32(uint32(len(streams)))
+				for n, st := range streams {
+					label := "Stream"
+					if len(streamNames) > 0 {
+						if name := streamNames[0][st.PID]; name != "" {
+							label = name
+						}
+					}
+					text(label)
+					text("")
+					b.u32(uint32(n + 1))
+					if kind == "subtitle" {
+						text("False")
+						text("False")
+						text("primary")
+					}
+					text(st.Language)
+					text(st.Language)
+				}
 			}
+			b.u32(0)
+			b.u32(0)
+
 		}
 		b.u32(uint32(len(p.Marks)))
 		for j := range p.Marks {

@@ -8,10 +8,12 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"time"
 
 	"eac3to/internal/aften"
 	"eac3to/internal/bluray"
 	"eac3to/internal/ssrc"
+	"eac3to/internal/toolinstall"
 )
 
 const help = `eac3to-go — native media demuxer and audio processor
@@ -30,6 +32,9 @@ Usage:
   eac3to DISC '1)'                         List tracks in a playlist
   eac3to PLAYLIST.mpls 1: chapters.txt      Export chapters
   eac3to input.wav output.flac             Convert one audio stream
+  eac3to --doctor                          Locate dependencies and check capabilities
+  eac3to --download-tools                  Install missing FFmpeg/FFprobe in a user directory
+  eac3to --download-tools --tools-dir=DIR   Install an isolated pair at a chosen destination
 
 Audio: -core, -keepDialnorm, -removeDialnorm, -normalize, -2pass,
        -no2ndpass, -down16, -down24, -full, -mono, -downStereo, -downDpl,
@@ -86,6 +91,34 @@ func Run(ctx context.Context, args []string, stdout, stderr io.Writer) error {
 	if o.Version {
 		_, e = fmt.Fprintln(stdout, "eac3to-go", Version)
 		return e
+	}
+	if o.DownloadTools {
+		if len(o.Inputs) > 0 || len(o.Outputs) > 0 || o.Demux || o.Report != "" {
+			return fmt.Errorf("--download-tools is a setup command; run extraction separately")
+		}
+		if o.ToolsDir == "" {
+			if existing, err := findTools(o); err == nil {
+				fmt.Fprintln(stderr, "FFmpeg and FFprobe were found; no download is needed.")
+				return doctor(ctx, existing, stdout, o.JSON)
+			}
+		}
+		dir := o.ToolsDir
+		if dir == "" {
+			dir, e = toolinstall.DefaultDir()
+			if e != nil {
+				return e
+			}
+		}
+		dir, e = toolinstall.Install(ctx, dir, stderr)
+		if e != nil {
+			return e
+		}
+		o.ToolsDir = dir
+		t, err := findTools(o)
+		if err != nil {
+			return err
+		}
+		return doctor(ctx, t, stdout, o.JSON)
 	}
 	if o.Test {
 		t, e := findTools(o)
@@ -293,6 +326,8 @@ func validateParityPaths(s *Source, outputs []Output, o Options) error {
 }
 
 func doctor(ctx context.Context, t Tools, w io.Writer, jsonMode bool) error {
+	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
 	type info struct {
 		Path, Version string
 		Capabilities  map[string]bool
@@ -302,7 +337,7 @@ func doctor(ctx context.Context, t Tools, w io.Writer, jsonMode bool) error {
 		cmd := exec.CommandContext(ctx, path, "-version")
 		b, e := cmd.Output()
 		if e != nil {
-			return e
+			return fmt.Errorf("%s was found at %s but cannot run: %w", name, path, e)
 		}
 		result[name] = info{Path: path, Version: strings.SplitN(string(b), "\n", 2)[0]}
 	}
@@ -332,6 +367,19 @@ func doctor(ctx context.Context, t Tools, w io.Writer, jsonMode bool) error {
 	f := result["ffmpeg"]
 	f.Capabilities = features
 	result["ffmpeg"] = f
+	protocols, err := exec.CommandContext(ctx, t.FFprobe, "-v", "error", "-protocols").Output()
+	if err != nil {
+		return fmt.Errorf("FFprobe capability check: %w", err)
+	}
+	probeBluray := false
+	for _, word := range strings.Fields(string(protocols)) {
+		if word == "bluray" {
+			probeBluray = true
+		}
+	}
+	probeInfo := result["ffprobe"]
+	probeInfo.Capabilities = map[string]bool{"protocols:bluray": probeBluray}
+	result["ffprobe"] = probeInfo
 	result["native"] = info{Version: Version, Capabilities: map[string]bool{"ssrc": ssrc.Available(), "aften": aften.Available(), "flac_integrity": true}}
 	if t.Decoder != "" {
 		result["audio_decoder"] = info{Path: t.Decoder, Capabilities: map[string]bool{"matched_profile": t.DecoderProfile}}
@@ -342,6 +390,10 @@ func doctor(ctx context.Context, t Tools, w io.Writer, jsonMode bool) error {
 		return enc.Encode(result)
 	}
 	fmt.Fprintf(w, "eac3to-go %s\nFFmpeg: %s\n%s\nFFprobe: %s\n%s\n", Version, t.FFmpeg, result["ffmpeg"].Version, t.FFprobe, result["ffprobe"].Version)
+	fmt.Fprintf(w, "FFprobe Blu-ray support: %t\n", probeBluray)
+	if !probeBluray {
+		fmt.Fprintln(w, "Warning: FFprobe lacks Blu-ray/libbluray support. Select a full build with --ffprobe=PATH or install one with --download-tools --tools-dir=NEW_DIRECTORY.")
+	}
 	for _, n := range []string{"decoders:dca", "decoders:truehd", "decoders:eac3", "encoders:flac", "encoders:libfdk_aac", "bsfs:dca_core", "protocols:bluray"} {
 		fmt.Fprintf(w, "%-24s %t\n", n, features[n])
 	}

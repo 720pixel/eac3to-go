@@ -27,10 +27,30 @@ support are never replaced by the build scripts.
 Disc probing requires FFprobe with libbluray enabled. Keep the FFmpeg/FFprobe
 pair together; explicit --ffmpeg and --ffprobe paths take priority.
 
+Dependency discovery searches explicit paths and environment overrides, a pair
+beside the executable or under tools/, PATH, then the isolated user installation.
+Windows uses .exe filenames and the native Windows PATH. Missing diagnostics name
+both required programs and explain setup. --doctor (also -test) checks the actual
+programs, codecs and FFprobe's Blu-ray protocol support. The optional matched
+decoder is also discovered beside the executable and on PATH.
+
+--download-tools is an explicit setup command. It downloads a matched FFmpeg and
+FFprobe pair for Linux/Windows amd64 from BtbN's release branch, verifies the
+publisher's SHA-256 digest, and checks both executables and libbluray support
+before publication. Existing tools are left alone. The default destination is
+an eac3to-go/tools directory inside the user's cache; --tools-dir=DIR selects a
+new destination. The archive and failed stages are removed. No administrator
+rights, system package installation or PATH changes are used. Separate FFmpeg
+builds have their own codec configuration; the matched audio decoder remains
+necessary for operations that require that profile.
+
   eac3to /disc/BDMV
   eac3to /disc/BDMV --main
   eac3to /disc/BDMV -demux -destpath=/output
   eac3to /disc/BDMV --playlist=00001 2: video.h264 3: audio.dts
+  eac3to --doctor
+  eac3to --download-tools
+  eac3to --download-tools --tools-dir=/path/to/new/tools
   eac3to input.wav output.flac
   eac3to input.wav output.wav -25.000 -changeTo24.000 +100ms
 
@@ -61,6 +81,14 @@ The report is published only after every requested output succeeds.
 Playlist selection combines authored main-feature labels, navigation evidence,
 clip metadata, picture-language branches and playlist families. Ambiguous discs
 require --playlist. It does not claim universal Java/menu emulation.
+
+Track reports also expose validated authored stream metadata. Blu-print project
+labels are matched to the complete MPLS timeline, stream numbers, languages,
+PIDs and primary angle before they can mark commentary, audio description,
+SDH or forced text. JSON includes the original label and its source alongside
+FFprobe-compatible dispositions. MPLS stream languages take precedence over
+transport language tags. Unknown labels do not establish a role, and channel
+counts or short-playlist names never establish commentary or feature alignment.
 
 Keep compressed sources in their original codec for stream extraction. Audio
 conversion has codec-specific requirements; lossless output alone does not

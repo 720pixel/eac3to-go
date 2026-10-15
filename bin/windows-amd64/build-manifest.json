@@ -5,8 +5,8 @@
   "compiler": "x86_64-w64-mingw32-gcc-posix (GCC) 13-posix",
   "artifacts": {
     "eac3to.exe": {
-      "sha256": "3ab1793f15762204e86a2e10aeab141a8377d25a98d9e0957249e36dffab492a",
-      "size": 4087296
+      "sha256": "7ae182de85c49cfb69f9c580a94289c1a73c1d492f107f4ebe8dd74513da9e24",
+      "size": 7369216
     },
     "pcmcompare.exe": {
       "sha256": "e44ed937d59943b1f2c937131e8b5151a4781059e2c3c932cbeb899e962ba0e3",

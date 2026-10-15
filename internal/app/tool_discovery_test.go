@@ -3,6 +3,7 @@ package app
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -41,5 +42,15 @@ func TestToolPairKeepsInstallationAndPriority(t *testing.T) {
 	tools, err = findTools(Options{})
 	if err != nil || tools.FFmpeg != otherF || tools.FFprobe != otherP {
 		t.Fatalf("environment paths were not retained: %+v, %v", tools, err)
+	}
+}
+
+func TestMissingToolDiagnosticsNameBothRequirements(t *testing.T) {
+	t.Setenv("PATH", t.TempDir())
+	t.Setenv("EAC3TO_FFMPEG", "")
+	t.Setenv("EAC3TO_FFPROBE", "")
+	_, err := findTools(Options{FFmpeg: filepath.Join(t.TempDir(), "missing-ffmpeg"), FFprobe: filepath.Join(t.TempDir(), "missing-ffprobe")})
+	if err == nil || !strings.Contains(err.Error(), "FFmpeg and FFprobe") || !strings.Contains(err.Error(), "--download-tools") || !strings.Contains(err.Error(), "PATH") {
+		t.Fatalf("%v", err)
 	}
 }

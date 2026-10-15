@@ -10,7 +10,7 @@ import (
 	"strings"
 )
 
-const Version = "0.1.0-alpha.1"
+const Version = "0.1.0-alpha.2"
 
 type AudioOptions struct {
 	Depth                                          int
@@ -40,6 +40,8 @@ type Options struct {
 	Outputs                                                      []OutputRequest
 	Defaults                                                     AudioOptions
 	Help, Version, Test, Demux, JSON, DryRun, Force, Quiet       bool
+	DownloadTools                                                bool
+	ToolsDir                                                     string
 	Check, SkipFirst, SkipLast, StrictPL, IncludeHidden, ShowAll bool
 	MinDuration                                                  float64
 	Title                                                        int
@@ -122,6 +124,14 @@ func ParseOptions(args []string) (Options, error) {
 			o.Version = true
 		case "-test", "--doctor":
 			o.Test = true
+		case "--download-tools":
+			o.DownloadTools = true
+		case "--tools-dir":
+			v, e := needVal()
+			if e != nil {
+				return o, e
+			}
+			o.ToolsDir = v
 		case "-demux":
 			o.Demux = true
 		case "--json":

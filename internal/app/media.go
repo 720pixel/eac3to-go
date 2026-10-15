@@ -14,6 +14,7 @@ import (
 	"strings"
 
 	"eac3to/internal/bluray"
+	"eac3to/internal/toolinstall"
 )
 
 type Tools struct {
@@ -90,12 +91,21 @@ type Source struct {
 	Seek, Limit    float64
 	TempDir        string
 	PCMSourceDelay *int64
+	Metadata       bluray.PlaylistMetadata
 	nativeScans    []clipScan
 	nativeTiming   *initialTransportTiming
 }
 
 func findTools(o Options) (Tools, error) {
 	t := Tools{FFmpeg: o.FFmpeg, FFprobe: o.FFprobe}
+	if o.ToolsDir != "" {
+		if t.FFmpeg == "" {
+			t.FFmpeg = filepath.Join(o.ToolsDir, executableName("ffmpeg"))
+		}
+		if t.FFprobe == "" {
+			t.FFprobe = filepath.Join(o.ToolsDir, executableName("ffprobe"))
+		}
+	}
 	if t.FFmpeg == "" {
 		t.FFmpeg = os.Getenv("EAC3TO_FFMPEG")
 	}
@@ -112,6 +122,9 @@ func findTools(o Options) (Tools, error) {
 			base := filepath.Dir(self)
 			dirs = append([]string{base, filepath.Join(base, "tools")}, dirs...)
 		}
+		if installed, err := toolinstall.DefaultDir(); err == nil {
+			dirs = append(dirs, installed)
+		}
 		t.FFmpeg, t.FFprobe = findToolPair(dirs)
 	}
 	if t.FFmpeg == "" {
@@ -123,13 +136,17 @@ func findTools(o Options) (Tools, error) {
 			t.FFprobe = "ffprobe"
 		}
 	}
-	f, e := exec.LookPath(t.FFmpeg)
-	if e != nil {
-		return t, fmt.Errorf("ffmpeg is required: %w", e)
+	f, ferr := exec.LookPath(t.FFmpeg)
+	p, perr := exec.LookPath(t.FFprobe)
+	var missing []string
+	if ferr != nil {
+		missing = append(missing, "FFmpeg")
 	}
-	p, e := exec.LookPath(t.FFprobe)
-	if e != nil {
-		return t, fmt.Errorf("ffprobe is required: %w", e)
+	if perr != nil {
+		missing = append(missing, "FFprobe")
+	}
+	if len(missing) > 0 {
+		return t, fmt.Errorf("%s required but not found. Put a matching FFmpeg/FFprobe pair on PATH or beside eac3to, use --ffmpeg=PATH and --ffprobe=PATH, or run eac3to --download-tools. Blu-ray input requires libbluray support", strings.Join(missing, " and "))
 	}
 	t.FFmpeg, _ = filepath.Abs(f)
 	t.FFprobe, _ = filepath.Abs(p)
@@ -196,6 +213,11 @@ func probe(ctx context.Context, t Tools, args []string) (Probe, error) {
 	cmd.Stdout = &out
 	cmd.Stderr = &errout
 	if e := cmd.Run(); e != nil {
+		for _, arg := range args {
+			if strings.HasPrefix(arg, "bluray:") && strings.Contains(errout.String(), "Protocol not found") {
+				return p, fmt.Errorf("Blu-ray input requires FFprobe with libbluray support; use --ffprobe=PATH or --download-tools --tools-dir=NEW_DIRECTORY: %w\n%s", e, errout.String())
+			}
+		}
 		return p, fmt.Errorf("ffprobe: %w\n%s", e, errout.String())
 	}
 	if e := json.Unmarshal(out.Bytes(), &p); e != nil {
@@ -209,6 +231,7 @@ func probe(ctx context.Context, t Tools, args []string) (Probe, error) {
 
 func openSource(ctx context.Context, t Tools, o Options, play *bluray.Playlist) (*Source, error) {
 	s := &Source{Paths: append([]string(nil), o.Inputs...)}
+	var metadata bluray.PlaylistMetadata
 	if len(s.Paths) == 0 {
 		return nil, fmt.Errorf("an input file or disc folder is required")
 	}
@@ -227,6 +250,7 @@ func openSource(ctx context.Context, t Tools, o Options, play *bluray.Playlist) 
 		}
 	}
 	if play != nil {
+		metadata = bluray.ReadPlaylistMetadata(play)
 		s.Playlist = play
 		s.Name = strings.TrimSuffix(filepath.Base(play.Path), filepath.Ext(play.Path))
 		clips, e := bluray.ResolveClips(play)
@@ -282,6 +306,7 @@ func openSource(ctx context.Context, t Tools, o Options, play *bluray.Playlist) 
 		return nil, e
 	}
 	s.Probe = p
+	s.Metadata = metadata
 	if s.Playlist != nil {
 		s.Probe.Chapters = playlistChapters(s.Playlist)
 		s.Probe.Format.Duration = strconv.FormatFloat(s.Playlist.Duration(), 'f', 9, 64)
@@ -318,10 +343,10 @@ func openSource(ctx context.Context, t Tools, o Options, play *bluray.Playlist) 
 					if stream.Tags == nil {
 						stream.Tags = map[string]string{}
 					}
-					if stream.Tags["language"] == "" {
-						stream.Tags["language"] = language
-					}
+					stream.Tags["language"] = language
+					stream.Tags["language_source"] = "MPLS STN"
 				}
+				applyAuthoredTrackMetadata(stream, uint16(pid), metadata)
 			}
 		}
 		s.Tracks = append(s.Tracks, track)
@@ -386,11 +411,12 @@ func printTracks(w io.Writer, s *Source, jsonMode bool) error {
 	}
 	if jsonMode {
 		return json.NewEncoder(w).Encode(struct {
-			Name     string    `json:"name"`
-			Duration string    `json:"duration"`
-			Tracks   []Track   `json:"tracks"`
-			Chapters []Chapter `json:"chapters,omitempty"`
-		}{s.Name, s.Probe.Format.Duration, tracks, s.Probe.Chapters})
+			Name     string                  `json:"name"`
+			Duration string                  `json:"duration"`
+			Tracks   []Track                 `json:"tracks"`
+			Chapters []Chapter               `json:"chapters,omitempty"`
+			Metadata bluray.PlaylistMetadata `json:"authored_metadata,omitempty"`
+		}{s.Name, s.Probe.Format.Duration, tracks, s.Probe.Chapters, s.Metadata})
 	}
 	duration, _ := strconv.ParseFloat(s.Probe.Format.Duration, 64)
 	fmt.Fprintf(w, "%s — %s\n", s.Name, timestamp(duration))
