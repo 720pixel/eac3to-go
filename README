@@ -1,121 +1,146 @@
-eac3to-go
-=========
+eac3to-go: native eac3to for Linux and Windows
+============================================
 
-Native media demuxing and audio processing in Go, with eac3to 4.00 behavior
-as the compatibility reference. The project is under development. It is not
-yet a complete replacement for every Windows eac3to operation.
+Native Blu-ray demuxer and audio converter for Linux and Windows, with the
+familiar eac3to command-line syntax. Written in Go with native SSRC resampling
+and Aften AC-3 encoding. Linux builds run without Wine or Windows DLLs.
 
-Linux and Windows amd64 builds are checked in under bin/:
+An independent implementation targeting eac3to 4.00 behavior. Currently in
+alpha: full compatibility is still being tested, and unsupported operations
+fail explicitly. Linux amd64 and Windows amd64 packages are available.
 
-  bin/eac3to
-  bin/windows-amd64/eac3to.exe
+Features
+--------
 
-Keep the matching libexec directory beside each executable for audio
-conversions that use the decoder helper. Packages, checksums and matching
-decoder source are available at https://github.com/720pixel/eac3to-go/releases.
+- Inspect Blu-ray directories, MPLS playlists, containers and audio files.
+- Extract video, audio, PGS subtitles and chapters; preserve encoded payloads
+  during stream extraction, with metadata edits controlled by track options.
+- Rank disc playlists using authored labels, navigation and clip metadata.
+  Ambiguous cuts or episodes require an explicit playlist selection.
+- Convert audio with gain, delay, downmixing, resampling and frame-rate changes.
+- Extract DTS cores, Dolby companions and forced PGS captions.
+- Use interactive track selection or explicit commands for scripts. JSON
+  listings and extraction reports expose track metadata and residual mux delays.
 
-  make build
-  make decoder
-  make windows
-  make check
+Quick start
+-----------
 
-Use bin/eac3to --help for available options. Linux builds use native Cgo SSRC
-and Aften processing. Windows builds use an isolated checksum-pinned MinGW
-toolchain; see scripts/build-windows.py. Media probing and some codecs use
-separate FFmpeg/FFprobe executables. Existing system installations and libFDK
-support are never replaced by the build scripts.
-Disc probing requires FFprobe with libbluray enabled. Keep the FFmpeg/FFprobe
-pair together; explicit --ffmpeg and --ffprobe paths take priority.
+Download a Linux amd64 (.tar.gz) or Windows amd64 (.zip) package from:
 
-Dependency discovery searches explicit paths and environment overrides, a pair
-beside the executable or under tools/, PATH, then the isolated user installation.
-Windows uses .exe filenames and the native Windows PATH. Missing diagnostics name
-both required programs and explain setup. --doctor (also -test) checks the actual
-programs, codecs and FFprobe's Blu-ray protocol support. The optional matched
-decoder is also discovered beside the executable and on PATH.
+  https://github.com/720pixel/eac3to-go/releases
 
---download-tools is an explicit setup command. It downloads a matched FFmpeg and
-FFprobe pair for Linux/Windows amd64 from BtbN's release branch, verifies the
-publisher's SHA-256 digest, and checks both executables and libbluray support
-before publication. Existing tools are left alone. The default destination is
-an eac3to-go/tools directory inside the user's cache; --tools-dir=DIR selects a
-new destination. The archive and failed stages are removed. No administrator
-rights, system package installation or PATH changes are used. Separate FFmpeg
-builds have their own codec configuration; the matched audio decoder remains
-necessary for operations that require that profile.
+Checksums and matching decoder source are included with each release. Extract
+the archive and keep libexec/ beside eac3to or eac3to.exe. The Linux CLI is
+static; its matched decoder helper requires glibc 2.35 or newer.
 
-  eac3to /disc/BDMV
-  eac3to /disc/BDMV --main
-  eac3to /disc/BDMV -demux -destpath=/output
-  eac3to /disc/BDMV --playlist=00001 2: video.h264 3: audio.dts
-  eac3to --doctor
-  eac3to --download-tools
-  eac3to --download-tools --tools-dir=/path/to/new/tools
+Install a matching FFmpeg/FFprobe pair. Blu-ray probing requires FFprobe built
+with libbluray. Check the available tools and codecs with:
+
+  ./eac3to --doctor
+
+If the pair is missing, download it into an isolated user directory:
+
+  ./eac3to --download-tools
+
+This verifies the publisher's SHA-256 digest and checks both tools and Blu-ray
+support. It leaves existing tools and PATH unchanged. To choose a new install
+directory, add --tools-dir=/path/to/tools.
+
+In Windows PowerShell, use the native executable:
+
+  .\eac3to.exe --doctor
+  .\eac3to.exe --download-tools
+
+Explicit --ffmpeg=PATH and --ffprobe=PATH options take priority, followed by
+EAC3TO_FFMPEG and EAC3TO_FFPROBE. Discovery also checks beside the executable,
+tools/, PATH and the isolated user installation. The matched audio decoder
+is found under libexec/ or on PATH; override it with --decoder=PATH or
+EAC3TO_DECODER.
+
+Usage
+-----
+
+The examples use eac3to on PATH. From the extracted directory, use ./eac3to
+on Linux or .\eac3to.exe in Windows PowerShell. Replace the example paths
+with your source and destination paths.
+
+  # Select a playlist, tracks and output formats interactively.
+  eac3to /media/disc/BDMV
+
+  # List tracks without prompts, then extract selected tracks.
+  eac3to movie.mkv --non-interactive
+  eac3to movie.mkv 1: video.h264 2: audio.flac
+
+  # Extract all tracks from a specific Blu-ray playlist.
+  eac3to /media/disc/BDMV --playlist=00001 -demux -destpath=extracted
+
+  # Convert audio or change its playback speed and apply a delay.
   eac3to input.wav output.flac
   eac3to input.wav output.wav -25.000 -changeTo24.000 +100ms
 
-Quote paths containing spaces and title selectors such as '1)' when using a
-shell. Existing outputs require --force. Unsupported operations fail explicitly.
---allow-unverified enables comparison paths; it does not establish parity.
+  # Extract a DTS core or forced PGS captions.
+  eac3to movie.mkv 2: core.dts -core
+  eac3to movie.mkv 3: forced.sup -forced
+
+Track numbers come from the source listing; chapters occupy a number when
+present. Track options follow the output filename. Options before the first
+output apply to every output. Quote paths containing spaces, title selectors
+such as '1)' and wildcard output names such as 'movie.*'.
+
+Source-only commands open a wizard in interactive terminals. Use
+--non-interactive for scripted listings. Commands with explicit outputs or
+-demux run unattended; --interactive requests a review before processing.
+--dry-run prints the plan. Existing outputs require --force. Temporary output
+files are published only after processing succeeds.
+
+--report=/path/to/extraction.json writes final output paths and remaining mux
+delays after all outputs succeed. --playlist-video-window limits video to the
+authored playlist in/out points while retaining audio framing and delay rules.
+Run eac3to --help for the full option list.
+
+Build and test
+--------------
+
+The Linux CLI needs Go 1.22+, C and C++ compilers, static runtime libraries
+and make. Cgo is required for SSRC and Aften. The matched decoder build also
+needs Linux amd64, Python 3.12+, GCC and git; it downloads pinned source
+archives and builds under build/ without installing system tools.
+
+  git clone https://github.com/720pixel/eac3to-go.git
+  cd eac3to-go
+  make build
+  make decoder
+  bin/eac3to --doctor
+  make test
+  make check
+
+make windows builds Windows amd64 executables using an isolated, pinned MinGW
+toolchain. See scripts/build-windows.py. FFmpeg/FFprobe remain separate runtime
+dependencies on both platforms.
+
+Compatibility
+-------------
+
+Tests cover generated format fixtures, encoded-byte comparisons, decoded PCM,
+timestamps and damaged input. These checks do not establish complete eac3to
+compatibility. Full-disc test media and local comparison records are excluded.
+Windows runtime validation has been performed under Wine.
+
+AC-3/E-AC-3 and lossy DTS decoding use the matched decoder helper, validated
+against a bounded reference corpus. Strict TrueHD playlist starts and
+unvalidated physical joins remain gated. --allow-unverified enables comparison
+runs; it does not implement missing algorithms or establish output equivalence.
 
 TrueHD and its embedded Dolby companion are extracted as separate elementary
-files. A .thd output contains only checked TrueHD access units. Request -core
-on that source for a separate .ac3 file, or .eac3 when that is the actual
-companion codec; a mismatched extension is rejected. No compatibility audio
-is encoded by -core, and no companion is invented for pure TrueHD.
+files. A .thd output contains TrueHD only. Use -core with .ac3 or .eac3 to
+extract the actual companion codec; no companion is generated for pure TrueHD.
+Normal SSRC draining preserves the full filter tail; --reference-tail reproduces
+the historical shorter tail. pcmcompare compares decoded samples, channel
+layout, sample rate and length.
 
-  eac3to /disc/BDMV --playlist=00001 3: main.thd -keepDialnorm 3: compatible.ac3 -core -keepDialnorm
+License
+-------
 
-Native playlist copying applies the checked multi-segment TrueHD postprocess
-and retains the separate companion. Timing scans inspect known media PIDs so
-unrelated clock and program-table padding cannot block extraction. Transport
-boundaries, selected streams and codec frames remain checked. Strict TrueHD
-playlist-start trimming and unvalidated physical joins retain their explicit
-quality gates.
-
---playlist-video-window limits video PES to the authored playlist in/out points
-while leaving audio framing and delay rules unchanged. It omits video padding
-beyond a clip's authored presentation without cutting into a TrueHD major unit.
-
-Interactive terminals open a wizard when launched without a source or with
-only a source. It lists playlists with their recommendation evidence, accepts
-track numbers or ranges, and asks for an output format and destination for
-each selected track. Review the concrete extraction/conversion plan before
-entering yes to start. q, EOF or no cancels before processing starts.
-
-  eac3to
-  eac3to /disc/BDMV
-  eac3to /disc/BDMV --non-interactive
-
---non-interactive keeps source-only commands in listing mode for scripts.
-Existing commands with explicit outputs or -demux remain unattended.
---interactive requests a review even for a fully specified output command.
-JSON, report and dry-run operations do not start an automatic wizard.
-
---report=/path/to/extraction.json writes a successful extraction manifest with
-the final output paths and residual mux delays. It is intended for muxers that
-need sample/frame-aligned extraction without dropping the remaining offset.
-The report is published only after every requested output succeeds.
-
-Playlist selection combines authored main-feature labels, navigation evidence,
-clip metadata, picture-language branches and playlist families. Ambiguous discs
-require --playlist. It does not claim universal Java/menu emulation.
-
-Track reports also expose validated authored stream metadata. Blu-print project
-labels are matched to the complete MPLS timeline, stream numbers, languages,
-PIDs and primary angle before they can mark commentary, audio description,
-SDH or forced text. JSON includes the original label and its source alongside
-FFprobe-compatible dispositions. MPLS stream languages take precedence over
-transport language tags. Unknown labels do not establish a role, and channel
-counts or short-playlist names never establish commentary or feature alignment.
-
-Keep compressed sources in their original codec for stream extraction. Audio
-conversion has codec-specific requirements; lossless output alone does not
-make every decoder equivalent. The separate pinned decoder profile has a
-bounded Windows comparison corpus. --reference-tail reproduces historical
-resampler tail behavior; normal draining preserves the complete filter tail.
-
-Tests use generated format fixtures and sample/byte comparisons. Full-disc
-test media and local comparison records are not distributed with this source.
-Third-party source retains its original licenses and attribution under
-third_party; build scripts and patches are included for rebuilding it.
+Original project code is licensed under MIT; see LICENSE. Third-party code
+retains its original licenses and attribution under third_party/. Decoder
+patches, pinned inputs and build recipes are included for rebuilding the helper.
