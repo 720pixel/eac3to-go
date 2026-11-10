@@ -10,7 +10,7 @@ import (
 	"strings"
 )
 
-const Version = "0.1.0-alpha.3"
+const Version = "0.1.0-alpha.4"
 
 type AudioOptions struct {
 	Depth                                          int
