@@ -23,7 +23,16 @@ import (
 	"github.com/ulikunitz/xz"
 )
 
-const apiURL = "https://api.github.com/repos/BtbN/FFmpeg-Builds/releases/tags/latest"
+const apiURL = "https://api.github.com/repos/FFmpeg-Builds/FFmpeg-Builds/releases/tags/latest"
+
+// The FFmpeg-Builds project moved from BtbN/FFmpeg-Builds to
+// FFmpeg-Builds/FFmpeg-Builds. GitHub redirects the old name, and release
+// records may carry either form, so both release download paths are accepted.
+var releasePaths = []string{
+	"/FFmpeg-Builds/FFmpeg-Builds/releases/download/",
+	"/BtbN/FFmpeg-Builds/releases/download/",
+}
+
 const maxArchive int64 = 512 << 20
 
 var client = &http.Client{Timeout: 10 * time.Minute}
@@ -79,8 +88,7 @@ func latestAsset(ctx context.Context, target string) (Asset, error) {
 		if asset.Name != name {
 			continue
 		}
-		u, err := url.Parse(asset.URL)
-		if err != nil || u.Scheme != "https" || u.Host != "github.com" || !strings.HasPrefix(u.Path, "/BtbN/FFmpeg-Builds/releases/download/") {
+		if !trustedDownloadURL(asset.URL) {
 			return Asset{}, fmt.Errorf("unexpected FFmpeg download URL")
 		}
 		sum, err := hex.DecodeString(strings.TrimPrefix(asset.Digest, "sha256:"))
@@ -90,6 +98,24 @@ func latestAsset(ctx context.Context, target string) (Asset, error) {
 		return asset, nil
 	}
 	return Asset{}, fmt.Errorf("the FFmpeg publisher has no supported %s asset; install a pair manually", target)
+}
+
+// trustedDownloadURL accepts only HTTPS release asset links on github.com
+// under the FFmpeg-Builds release paths.
+func trustedDownloadURL(raw string) bool {
+	u, err := url.Parse(raw)
+	if err != nil || u.Scheme != "https" || u.Host != "github.com" || u.User != nil || u.Opaque != "" {
+		return false
+	}
+	if u.RawPath != "" || path.Clean(u.Path) != u.Path {
+		return false
+	}
+	for _, prefix := range releasePaths {
+		if strings.HasPrefix(u.Path, prefix) && len(u.Path) > len(prefix) {
+			return true
+		}
+	}
+	return false
 }
 
 func Install(ctx context.Context, directory string, log io.Writer) (string, error) {
@@ -120,7 +146,7 @@ func installAsset(ctx context.Context, directory, target string, asset Asset, lo
 	}
 	defer os.RemoveAll(stage)
 	archive := filepath.Join(stage, "download")
-	fmt.Fprintln(log, "Downloading a matched FFmpeg/FFprobe pair from BtbN/FFmpeg-Builds…")
+	fmt.Fprintln(log, "Downloading a matched FFmpeg/FFprobe pair from FFmpeg-Builds…")
 	resp, err := request(ctx, asset.URL)
 	if err != nil {
 		return "", err
@@ -161,7 +187,7 @@ func installAsset(ctx context.Context, directory, target string, asset Asset, lo
 		Publisher string `json:"publisher"`
 		Target    string `json:"target"`
 		Asset     Asset  `json:"asset"`
-	}{"BtbN/FFmpeg-Builds", target, asset}, "", "  ")
+	}{"FFmpeg-Builds/FFmpeg-Builds", target, asset}, "", "  ")
 	if err != nil {
 		return "", err
 	}

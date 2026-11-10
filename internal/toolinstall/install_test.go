@@ -139,3 +139,37 @@ func TestArchiveTraversalAndMissingTools(t *testing.T) {
 		}
 	}
 }
+
+func TestTrustedDownloadURL(t *testing.T) {
+	const asset = "/releases/download/latest/ffmpeg-n9.0-latest-linux64-gpl-9.0.tar.xz"
+	for _, raw := range []string{
+		"https://github.com/FFmpeg-Builds/FFmpeg-Builds" + asset,
+		"https://github.com/BtbN/FFmpeg-Builds" + asset,
+	} {
+		if !trustedDownloadURL(raw) {
+			t.Errorf("rejected publisher URL %s", raw)
+		}
+	}
+	for _, raw := range []string{
+		"http://github.com/FFmpeg-Builds/FFmpeg-Builds" + asset,
+		"https://github.com.example.net/FFmpeg-Builds/FFmpeg-Builds" + asset,
+		"https://github.com:8443/FFmpeg-Builds/FFmpeg-Builds" + asset,
+		"https://user@github.com/FFmpeg-Builds/FFmpeg-Builds" + asset,
+		"https://github.com/FFmpeg-Builds/FFmpeg-Builds-mirror" + asset,
+		"https://github.com/FFmpeg-Builds-mirror/FFmpeg-Builds" + asset,
+		"https://github.com/BtbN/FFmpeg-Builds.evil" + asset,
+		"https://github.com/ffmpeg-builds/ffmpeg-builds" + asset,
+		"https://github.com/FFmpeg-Builds/FFmpeg-Builds/archive/refs/tags/latest.tar.gz",
+		"https://github.com/FFmpeg-Builds/FFmpeg-Builds/releases/download/",
+		"https://github.com/FFmpeg-Builds/FFmpeg-Builds/releases/download/../../../../other/repo/releases/download/latest/a.tar.xz",
+		"https://github.com/FFmpeg-Builds/FFmpeg-Builds/releases/download/latest%2F..%2F..%2Fother.tar.xz",
+		"https://objects.githubusercontent.com/FFmpeg-Builds/FFmpeg-Builds" + asset,
+		"https://github.com/other/FFmpeg-Builds" + asset,
+		"github.com/FFmpeg-Builds/FFmpeg-Builds" + asset,
+		"",
+	} {
+		if trustedDownloadURL(raw) {
+			t.Errorf("accepted untrusted URL %q", raw)
+		}
+	}
+}
